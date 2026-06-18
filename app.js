@@ -165,5 +165,6 @@ async function finalizarPedido() {
     <p>Após confirmar o pagamento, o pedido aparecerá no balcão.</p>
   `;
 
-  limparCarrinho();
+  carrinho = [];
+renderizarCarrinho();
 }
