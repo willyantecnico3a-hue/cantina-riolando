@@ -187,6 +187,33 @@ input, select {
   background: #eef8f1;
 }
 
+.pix-qrcode {
+  margin-top: 16px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.pix-qrcode img {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+}
+
+.pix-copia {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
 .lista {
   display: grid;
   gap: 12px;

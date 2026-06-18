@@ -1,4 +1,38 @@
-let produtos = [];
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cantina Riolando - Balcão</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo">
+    <div>
+      <h1>Balcão da Cantina</h1>
+      <p>Acompanhamento e liberação dos pedidos</p>
+    </div>
+    <nav>
+      <a href="index.html">Totem</a>
+      <a href="balcao.html">Balcão</a>
+      <a href="admin.html">Admin</a>
+      <a href="app.html">App</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Pedidos em aberto</h2>
+      <div id="pedidosBalcao" class="lista"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="balcao.js"></script>
+</body>
+</html>let produtos = [];
 let carrinho = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -167,3 +201,7 @@ async function finalizarPedido() {
 
   limparCarrinho();
 }
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config-supabase.js"></script>
+<script src="balcao.js"></script>

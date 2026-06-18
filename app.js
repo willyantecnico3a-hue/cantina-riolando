@@ -6,6 +6,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarProdutos();
 });
 
+function htmlSeguro(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 async function verificarTotem() {
   const config = await buscarConfig();
   if (config && config.totem_pausado) {
@@ -156,15 +165,52 @@ async function finalizarPedido() {
 
   const config = await buscarConfig();
 
+  let pixDados = null;
+  try {
+    const respostaPix = await fetch("/.netlify/functions/criar-pix", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        pedido_id: pedido.id,
+        numero_pedido: numero,
+        valor: total,
+        cliente_nome: clienteNome,
+        cliente_email: clienteEmail,
+        descricao: `Pedido ${numero} - Cantina Riolando`,
+        pix_nome: config?.pix_nome || "Cantina Riolando",
+        pix_cidade: config?.pix_cidade || "DIADEMA"
+      })
+    });
+
+    const dadosPix = await respostaPix.json();
+
+    if (respostaPix.ok) {
+      pixDados = dadosPix;
+    } else {
+      console.warn("Falha ao gerar Pix:", dadosPix);
+    }
+  } catch (error) {
+    console.warn("Erro ao chamar função de Pix:", error);
+  }
+
+  const qrBase64 = pixDados?.pix_qr_code_base64 || pixDados?.qr_code_base64 || "";
+  const qrTexto = pixDados?.pix_qr_code || pixDados?.qr_code || "";
+  const ticketUrl = pixDados?.pix_ticket_url || pixDados?.ticket_url || "";
+
   document.getElementById("resultadoPedido").innerHTML = `
     <h3>Pedido nº ${numero}</h3>
     <p>Total: <strong>${moeda(total)}</strong></p>
     <p>Faça o Pix para:</p>
-    <p><strong>${config?.pix_nome || "Cantina Riolando"}</strong></p>
-    <p>Chave Pix: <strong>${config?.pix_chave || "Configure no painel admin"}</strong></p>
+    <p><strong>${htmlSeguro(config?.pix_nome || "Cantina Riolando")}</strong></p>
+    <p>Chave Pix: <strong>${htmlSeguro(config?.pix_chave || "Configure no painel admin")}</strong></p>
+    ${qrBase64 ? `<div class="pix-qrcode"><img src="data:image/png;base64,${qrBase64}" alt="QRCode Pix do pedido ${numero}"></div>` : ""}
+    ${ticketUrl ? `<p><a href="${htmlSeguro(ticketUrl)}" target="_blank" rel="noopener noreferrer">Abrir comprovante Pix</a></p>` : ""}
+    ${qrTexto ? `<textarea class="pix-copia" readonly rows="4">${htmlSeguro(qrTexto)}</textarea>` : ""}
     <p>Após confirmar o pagamento, o pedido aparecerá no balcão.</p>
   `;
 
   carrinho = [];
-renderizarCarrinho();
+  renderizarCarrinho();
 }
