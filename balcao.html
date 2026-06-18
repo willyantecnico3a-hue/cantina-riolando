@@ -3,15 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Cantina Riolando - Balcão</title>
+
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <header class="topo">
     <div>
       <h1>Balcão da Cantina</h1>
       <p>Acompanhamento e liberação dos pedidos</p>
     </div>
+
     <nav>
       <a href="index.html">Totem</a>
       <a href="balcao.html">Balcão</a>
@@ -23,185 +27,21 @@
   <main class="container">
     <section class="card">
       <h2>Pedidos em aberto</h2>
-      <div id="pedidosBalcao" class="lista"></div>
+
+      <div id="pedidosBalcao" class="lista">
+        <p>Carregando pedidos...</p>
+      </div>
     </section>
   </main>
 
+  <!-- Biblioteca oficial do Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Configuração do projeto Supabase -->
   <script src="config.js"></script>
   <script src="supabaseClient.js"></script>
+
+  <!-- Código da tela do balcão -->
   <script src="balcao.js"></script>
 </body>
-</html>let produtos = [];
-let carrinho = [];
-
-document.addEventListener("DOMContentLoaded", async () => {
-  await verificarTotem();
-  await carregarProdutos();
-});
-
-async function verificarTotem() {
-  const config = await buscarConfig();
-  if (config && config.totem_pausado) {
-    document.querySelector("main").innerHTML = `
-      <section class="card">
-        <h2>Totem pausado</h2>
-        <p>As vendas estão temporariamente pausadas pela administração.</p>
-      </section>`;
-  }
-}
-
-async function carregarProdutos() {
-  const { data, error } = await db
-    .from("produtos")
-    .select("*")
-    .eq("ativo", true)
-    .order("categoria", { ascending: true });
-
-  if (error) {
-    alert("Erro ao carregar produtos: " + error.message);
-    return;
-  }
-
-  produtos = data || [];
-  renderizarProdutos();
-}
-
-function renderizarProdutos() {
-  const area = document.getElementById("produtos");
-  area.innerHTML = "";
-
-  produtos.forEach(produto => {
-    const semEstoque = produto.estoque <= 0;
-    const div = document.createElement("div");
-    div.className = "produto";
-    div.innerHTML = `
-      <img src="${produto.imagem_url || 'https://placehold.co/400x250?text=Cantina+Riolando'}" alt="${produto.nome}">
-      <h3>${produto.nome}</h3>
-      <p>${produto.categoria || "Geral"}</p>
-      <p class="preco">${moeda(produto.preco)}</p>
-      <p>Disponível: ${produto.estoque}</p>
-      ${semEstoque ? '<p class="esgotado">Esgotado</p>' : `<button class="btn principal" onclick="adicionarCarrinho('${produto.id}')">Adicionar</button>`}
-    `;
-    area.appendChild(div);
-  });
-}
-
-function adicionarCarrinho(id) {
-  const produto = produtos.find(p => p.id === id);
-  if (!produto || produto.estoque <= 0) return;
-
-  const item = carrinho.find(i => i.id === id);
-  const quantidadeAtual = item ? item.quantidade : 0;
-
-  if (quantidadeAtual + 1 > produto.estoque) {
-    alert("Quantidade maior que o estoque disponível.");
-    return;
-  }
-
-  if (item) item.quantidade++;
-  else carrinho.push({ ...produto, quantidade: 1 });
-
-  renderizarCarrinho();
-}
-
-function removerCarrinho(id) {
-  carrinho = carrinho.filter(i => i.id !== id);
-  renderizarCarrinho();
-}
-
-function renderizarCarrinho() {
-  const area = document.getElementById("itensCarrinho");
-  area.innerHTML = "";
-
-  carrinho.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "item-carrinho";
-    div.innerHTML = `
-      <strong>${item.nome}</strong><br>
-      Quantidade: ${item.quantidade}<br>
-      Subtotal: ${moeda(item.preco * item.quantidade)}
-      <button class="btn" onclick="removerCarrinho('${item.id}')">Remover</button>
-    `;
-    area.appendChild(div);
-  });
-
-  const total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
-  document.getElementById("total").textContent = moeda(total);
-}
-
-function limparCarrinho() {
-  carrinho = [];
-  renderizarCarrinho();
-  document.getElementById("resultadoPedido").innerHTML = "";
-}
-
-async function finalizarPedido() {
-  const clienteNome = document.getElementById("clienteNome").value.trim();
-  const clienteEmail = document.getElementById("clienteEmail").value.trim();
-
-  if (!clienteNome || !clienteEmail) {
-    alert("Informe nome e e-mail institucional.");
-    return;
-  }
-
-  if (carrinho.length === 0) {
-    alert("Adicione pelo menos um produto.");
-    return;
-  }
-
-  const total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
-  const numero = numeroPedido();
-
-  const { data: pedido, error } = await db
-    .from("pedidos")
-    .insert({
-      numero_pedido: numero,
-      cliente_nome: clienteNome,
-      cliente_email: clienteEmail,
-      total,
-      canal_venda: "totem",
-      turno: turnoAtual(),
-      status: "aguardando_pagamento"
-    })
-    .select()
-    .single();
-
-  if (error) {
-    alert("Erro ao criar pedido: " + error.message);
-    return;
-  }
-
-  const itens = carrinho.map(item => ({
-    pedido_id: pedido.id,
-    produto_id: item.id,
-    produto_nome: item.nome,
-    quantidade: item.quantidade,
-    preco_unitario: item.preco,
-    subtotal: item.preco * item.quantidade
-  }));
-
-  const { error: erroItens } = await db.from("itens_pedido").insert(itens);
-
-  if (erroItens) {
-    alert("Erro ao salvar itens: " + erroItens.message);
-    return;
-  }
-
-  const config = await buscarConfig();
-
-  document.getElementById("resultadoPedido").innerHTML = `
-    <h3>Pedido nº ${numero}</h3>
-    <p>Total: <strong>${moeda(total)}</strong></p>
-    <p>Faça o Pix para:</p>
-    <p><strong>${config?.pix_nome || "Cantina Riolando"}</strong></p>
-    <p>Chave Pix: <strong>${config?.pix_chave || "Configure no painel admin"}</strong></p>
-    <p>Após confirmar o pagamento, o pedido aparecerá no balcão.</p>
-  `;
-
-  limparCarrinho();
-}
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config-supabase.js"></script>
-<script src="balcao.js"></script>
+</html>
