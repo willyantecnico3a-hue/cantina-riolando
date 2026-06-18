@@ -1,0 +1,56 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cantina Riolando - Totem</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo">
+    <div>
+      <h1>Cantina Riolando</h1>
+      <p>Totem de autoatendimento escolar</p>
+    </div>
+    <nav>
+      <a href="index.html">Totem</a>
+      <a href="balcao.html">Balcão</a>
+      <a href="admin.html">Admin</a>
+      <a href="app.html">App</a>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="card grande">
+      <h2>Escolha seus produtos</h2>
+      <div id="produtos" class="grid-produtos"></div>
+    </section>
+
+    <aside class="card carrinho">
+      <h2>Meu pedido</h2>
+
+      <label>Nome do cliente</label>
+      <input id="clienteNome" placeholder="Ex: João Silva" />
+
+      <label>E-mail institucional</label>
+      <input id="clienteEmail" placeholder="exemplo@aluno.educacao.sp.gov.br" />
+
+      <div id="itensCarrinho"></div>
+
+      <h3>Total: <span id="total">R$ 0,00</span></h3>
+
+      <button class="btn principal" onclick="finalizarPedido()">Gerar pedido Pix</button>
+      <button class="btn limpar" onclick="limparCarrinho()">Limpar</button>
+
+      <div id="resultadoPedido" class="resultado"></div>
+    </aside>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
