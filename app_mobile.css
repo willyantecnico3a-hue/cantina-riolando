@@ -1,5 +1,6 @@
 body.modo-app {
   background: #f5f7fa;
+  padding-bottom: 86px;
 }
 
 .topo-app {
@@ -117,6 +118,7 @@ body.modo-app {
   border: 2px solid #bde7cc;
   background: #ffffff;
   box-shadow: 0 8px 20px rgba(0, 143, 90, 0.12);
+  scroll-margin-top: 12px;
 }
 
 .modo-app .app-carrinho h2 {
@@ -132,6 +134,49 @@ body.modo-app {
 
 .modo-app .busca-produtos {
   margin-bottom: 8px;
+}
+
+.modo-app .destacar-carrinho {
+  animation: destacarCarrinho 0.9s ease;
+}
+
+.resumo-carrinho-app {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 30;
+  min-height: 62px;
+  border: none;
+  border-radius: 14px;
+  background: #0f4c81;
+  color: #ffffff;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 26px rgba(15, 76, 129, 0.24);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.resumo-carrinho-app strong {
+  font-size: 18px;
+}
+
+.resumo-carrinho-app span:last-child {
+  text-align: right;
+}
+
+.resumo-carrinho-app.tem-itens {
+  background: #008f5a;
+}
+
+@keyframes destacarCarrinho {
+  0% { box-shadow: 0 0 0 0 rgba(0, 143, 90, 0.42); }
+  55% { box-shadow: 0 0 0 8px rgba(0, 143, 90, 0.12); }
+  100% { box-shadow: 0 8px 20px rgba(0, 143, 90, 0.12); }
 }
 
 .modo-app input,

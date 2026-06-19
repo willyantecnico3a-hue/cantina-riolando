@@ -1,6 +1,7 @@
 let produtoEmEdicaoId = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
+  mostrarAbaAdmin("produtos");
   await carregarConfiguracao();
   await carregarProdutosAdmin();
   await carregarRelatorios();
@@ -15,6 +16,17 @@ function moeda(valor) {
 
 function normalizarTexto(valor) {
   return String(valor || "").trim();
+}
+
+function mostrarAbaAdmin(nomeAba) {
+  document.querySelectorAll("[data-admin-section]").forEach((secao) => {
+    secao.classList.toggle("ativa", secao.dataset.adminSection === nomeAba);
+  });
+
+  document.querySelectorAll(".admin-tab").forEach((botao) => {
+    const texto = botao.textContent.trim().toLowerCase();
+    botao.classList.toggle("ativa", texto === nomeAba);
+  });
 }
 
 async function obterConfiguracaoAtual() {
@@ -295,3 +307,5 @@ async function carregarRelatorios() {
     alert("Erro ao carregar relatórios: " + error.message);
   }
 }
+
+window.mostrarAbaAdmin = mostrarAbaAdmin;

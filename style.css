@@ -73,6 +73,51 @@ nav a {
   padding: 20px;
 }
 
+.admin-page {
+  width: min(1280px, 96%);
+  margin: 20px auto;
+}
+
+.admin-page .admin-grid {
+  padding: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.admin-tab {
+  border: 1px solid var(--borda);
+  background: #ffffff;
+  color: var(--azul);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-tab.ativa {
+  background: var(--azul);
+  color: #ffffff;
+  border-color: var(--azul);
+}
+
+.admin-secao {
+  display: none;
+}
+
+.admin-secao.ativa {
+  display: block;
+}
+
+.admin-atalhos {
+  display: grid;
+  gap: 10px;
+}
+
 .card {
   background: var(--branco);
   border: 1px solid var(--borda);

@@ -436,6 +436,34 @@ function renderizarCarrinho() {
   }, 0);
 
   totalEl.textContent = formatarMoedaLocal(total);
+  atualizarResumoCarrinhoApp(total);
+}
+
+function atualizarResumoCarrinhoApp(total) {
+  const resumo = document.getElementById("resumoCarrinhoApp");
+  const qtdEl = document.getElementById("resumoCarrinhoQtd");
+  const totalResumoEl = document.getElementById("resumoCarrinhoTotal");
+
+  if (!resumo || !qtdEl || !totalResumoEl) return;
+
+  const quantidade = carrinho.reduce(function (soma, item) {
+    return soma + Number(item.quantidade || 0);
+  }, 0);
+
+  qtdEl.textContent = quantidade === 1 ? "1 item" : `${quantidade} itens`;
+  totalResumoEl.textContent = formatarMoedaLocal(total);
+  resumo.classList.toggle("tem-itens", quantidade > 0);
+}
+
+function abrirCarrinhoApp() {
+  const carrinhoEl = document.querySelector(".app-carrinho");
+  if (!carrinhoEl) return;
+
+  carrinhoEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  carrinhoEl.classList.add("destacar-carrinho");
+  setTimeout(function () {
+    carrinhoEl.classList.remove("destacar-carrinho");
+  }, 900);
 }
 
 function limparCarrinho() {
@@ -704,6 +732,7 @@ window.carregarProdutos = carregarProdutos;
 window.filtrarCategoria = filtrarCategoria;
 window.buscarProdutosPorNome = buscarProdutosPorNome;
 window.irParaPaginaProdutos = irParaPaginaProdutos;
+window.abrirCarrinhoApp = abrirCarrinhoApp;
 window.adicionarCarrinho = adicionarCarrinho;
 window.aumentarQuantidade = aumentarQuantidade;
 window.diminuirQuantidade = diminuirQuantidade;
