@@ -1,5 +1,12 @@
-/* balcao.js
-   Sistema de Balcão - Totem Cantina Riolando */
+/* balcao.js corrigido
+   Sistema de Balcão - Totem Cantina Riolando
+
+   Este arquivo deve ser carregado pelo balcao.html, depois destes scripts:
+   1) https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
+   2) config.js
+   3) supabaseClient.js
+   4) balcao.js
+*/
 
 let canalPedidosBalcao = null;
 let timerAtualizacaoBalcao = null;
@@ -7,14 +14,19 @@ let timerAtualizacaoBalcao = null;
 document.addEventListener("DOMContentLoaded", iniciarBalcao);
 
 async function iniciarBalcao() {
-  if (!window.db && typeof db === "undefined") {
-    alert("Erro: conexão com o Supabase não encontrada. Verifique se o arquivo de configuração do banco foi carregado antes do balcao.js.");
+  const banco = obterBanco();
+
+  if (!banco) {
+    mostrarErroBalcao(
+      "Erro: conexão com o Supabase não encontrada. Verifique se config.js e supabaseClient.js foram carregados antes do balcao.js."
+    );
     return;
   }
 
   const area = document.getElementById("pedidosBalcao");
+
   if (!area) {
-    alert("Erro: não encontrei a área #pedidosBalcao no HTML da tela balcão.");
+    alert("Erro: não encontrei a área #pedidosBalcao no arquivo balcao.html.");
     return;
   }
 
@@ -22,14 +34,32 @@ async function iniciarBalcao() {
   ouvirPedidosTempoReal();
 }
 
+function obterBanco() {
+  if (typeof window !== "undefined" && window.db) {
+    return window.db;
+  }
+
+  if (typeof db !== "undefined") {
+    return db;
+  }
+
+  return null;
+}
+
 async function carregarPedidos() {
+  const banco = obterBanco();
   const area = document.getElementById("pedidosBalcao");
 
   if (!area) return;
 
+  if (!banco) {
+    mostrarErroBalcao("Erro: Supabase não conectado.");
+    return;
+  }
+
   area.innerHTML = "<p>Carregando pedidos...</p>";
 
-  const { data, error } = await db
+  const { data, error } = await banco
     .from("pedidos")
     .select("*, itens_pedido(*)")
     .in("status", ["aguardando_pagamento", "pago", "em_preparo", "pronto"])
@@ -37,7 +67,11 @@ async function carregarPedidos() {
 
   if (error) {
     console.error("Erro ao carregar pedidos:", error);
-    area.innerHTML = `<p class="erro">Erro ao carregar pedidos: ${htmlSeguro(error.message)}</p>`;
+    area.innerHTML = `
+      <p class="erro">
+        Erro ao carregar pedidos: ${htmlSeguro(error.message)}
+      </p>
+    `;
     return;
   }
 
@@ -56,44 +90,22 @@ function renderizarPedidos(pedidos) {
   }
 
   pedidos.forEach((pedido) => {
-    const itens = pedido.itens_pedido && pedido.itens_pedido.length > 0
-      ? pedido.itens_pedido
-          .map((i) => `${Number(i.quantidade)}x ${htmlSeguro(i.produto_nome)}`)
-          .join("<br>")
-      : "Nenhum item encontrado.";
-
+    const itens = montarListaItens(pedido);
     const statusTexto = formatarStatus(pedido.status);
 
     const div = document.createElement("div");
-    div.className = `pedido status-${pedido.status}`;
+    div.className = `pedido status-${htmlSeguro(pedido.status)}`;
 
     div.innerHTML = `
       <h2>Pedido nº ${htmlSeguro(pedido.numero_pedido)}</h2>
+
       <p><strong>Cliente:</strong> ${htmlSeguro(pedido.cliente_nome)}</p>
       <p><strong>Status:</strong> <span class="status">${statusTexto}</span></p>
       <p><strong>Total:</strong> ${formatarMoeda(pedido.total)}</p>
       <p><strong>Itens:</strong><br>${itens}</p>
 
       <div class="acoes-pedido">
-        ${pedido.status === "aguardando_pagamento"
-          ? `<button class="btn principal" onclick="alterarStatus('${pedido.id}', 'pago')">Confirmar Pix</button>`
-          : ""
-        }
-
-        ${pedido.status === "pago"
-          ? `<button class="btn" onclick="alterarStatus('${pedido.id}', 'em_preparo')">Em preparo</button>`
-          : ""
-        }
-
-        ${pedido.status === "em_preparo"
-          ? `<button class="btn" onclick="alterarStatus('${pedido.id}', 'pronto')">Pronto</button>`
-          : ""
-        }
-
-        ${pedido.status === "pronto"
-          ? `<button class="btn alerta" onclick="entregarPedido('${pedido.id}')">Entregue / Baixar</button>`
-          : ""
-        }
+        ${montarBotoesPedido(pedido)}
       </div>
     `;
 
@@ -101,15 +113,80 @@ function renderizarPedidos(pedidos) {
   });
 }
 
+function montarListaItens(pedido) {
+  if (!pedido.itens_pedido || pedido.itens_pedido.length === 0) {
+    return "Nenhum item encontrado.";
+  }
+
+  return pedido.itens_pedido
+    .map((item) => {
+      const quantidade = Number(item.quantidade || 0);
+      const nome = htmlSeguro(item.produto_nome || "Produto");
+      return `${quantidade}x ${nome}`;
+    })
+    .join("<br>");
+}
+
+function montarBotoesPedido(pedido) {
+  const id = htmlSeguro(pedido.id);
+
+  if (pedido.status === "aguardando_pagamento") {
+    return `
+      <button class="btn principal" onclick="alterarStatus('${id}', 'pago')">
+        Confirmar Pix
+      </button>
+    `;
+  }
+
+  if (pedido.status === "pago") {
+    return `
+      <button class="btn principal" onclick="alterarStatus('${id}', 'em_preparo')">
+        Enviar para preparo
+      </button>
+    `;
+  }
+
+  if (pedido.status === "em_preparo") {
+    return `
+      <button class="btn principal" onclick="alterarStatus('${id}', 'pronto')">
+        Marcar como pronto
+      </button>
+    `;
+  }
+
+  if (pedido.status === "pronto") {
+    return `
+      <button class="btn alerta" onclick="entregarPedido('${id}')">
+        Entregue / Baixar estoque
+      </button>
+    `;
+  }
+
+  return "";
+}
+
 async function alterarStatus(id, status) {
-  const statusPermitidos = ["aguardando_pagamento", "pago", "em_preparo", "pronto", "entregue"];
+  const banco = obterBanco();
+
+  if (!banco) {
+    alert("Erro: Supabase não conectado.");
+    return;
+  }
+
+  const statusPermitidos = [
+    "aguardando_pagamento",
+    "pago",
+    "em_preparo",
+    "pronto",
+    "entregue"
+  ];
 
   if (!statusPermitidos.includes(status)) {
     alert("Status inválido.");
     return;
   }
 
-  const { error } = await db
+  const { error } = await banco
     .from("pedidos")
     .update({ status })
     .eq("id", id);
@@ -124,10 +201,17 @@ async function alterarStatus(id, status) {
 }
 
 async function entregarPedido(id) {
+  const banco = obterBanco();
+
+  if (!banco) {
+    alert("Erro: Supabase não conectado.");
+    return;
+  }
+
   const confirmar = confirm("Confirmar que este pedido foi entregue e baixar o estoque?");
   if (!confirmar) return;
 
-  const { data: pedido, error: erroPedido } = await db
+  const { data: pedido, error: erroPedido } = await banco
     .from("pedidos")
     .select("id, status, numero_pedido")
     .eq("id", id)
@@ -151,7 +235,7 @@ async function entregarPedido(id) {
     return;
   }
 
-  const { data: itens, error: erroItens } = await db
+  const { data: itens, error: erroItens } = await banco
     .from("itens_pedido")
     .select("*")
     .eq("pedido_id", id);
@@ -170,7 +254,7 @@ async function entregarPedido(id) {
   const produtosParaAtualizar = [];
 
   for (const item of itens) {
-    const { data: produto, error: erroProduto } = await db
+    const { data: produto, error: erroProduto } = await banco
       .from("produtos")
       .select("id, nome, estoque")
       .eq("id", item.produto_id)
@@ -203,7 +287,7 @@ async function entregarPedido(id) {
   }
 
   for (const produto of produtosParaAtualizar) {
-    const { error: erroAtualizarEstoque } = await db
+    const { error: erroAtualizarEstoque } = await banco
       .from("produtos")
       .update({ estoque: produto.novoEstoque })
       .eq("id", produto.id);
@@ -215,7 +299,7 @@ async function entregarPedido(id) {
     }
   }
 
-  const { error: erroBaixarPedido } = await db
+  const { error: erroBaixarPedido } = await banco
     .from("pedidos")
     .update({
       status: "entregue",
@@ -225,7 +309,10 @@ async function entregarPedido(id) {
 
   if (erroBaixarPedido) {
     console.error("Erro ao baixar pedido:", erroBaixarPedido);
-    alert("Estoque baixado, mas houve erro ao marcar pedido como entregue: " + erroBaixarPedido.message);
+    alert(
+      "Estoque baixado, mas houve erro ao marcar pedido como entregue: " +
+      erroBaixarPedido.message
+    );
     return;
   }
 
@@ -234,20 +321,22 @@ async function entregarPedido(id) {
 }
 
 function ouvirPedidosTempoReal() {
-  if (!db || !db.channel) {
+  const banco = obterBanco();
+
+  if (!banco || !banco.channel) {
     console.warn("Realtime não disponível nesta conexão do Supabase.");
     return;
   }
 
   if (canalPedidosBalcao) {
     try {
-      db.removeChannel(canalPedidosBalcao);
+      banco.removeChannel(canalPedidosBalcao);
     } catch (e) {
       console.warn("Não foi possível remover canal anterior:", e);
     }
   }
 
-  canalPedidosBalcao = db
+  canalPedidosBalcao = banco
     .channel("pedidos-balcao")
     .on(
       "postgres_changes",
@@ -266,6 +355,7 @@ function ouvirPedidosTempoReal() {
 
 function atualizarPedidosComDelay() {
   clearTimeout(timerAtualizacaoBalcao);
+
   timerAtualizacaoBalcao = setTimeout(() => {
     carregarPedidos();
   }, 400);
@@ -280,11 +370,11 @@ function formatarStatus(status) {
     entregue: "Entregue"
   };
 
-  return nomes[status] || status;
+  return nomes[status] || htmlSeguro(status);
 }
 
 function formatarMoeda(valor) {
-  if (typeof window.moeda === "function") {
+  if (typeof window !== "undefined" && typeof window.moeda === "function") {
     return window.moeda(valor);
   }
 
@@ -303,6 +393,17 @@ function htmlSeguro(valor) {
     .replaceAll("'", "&#039;");
 }
 
+function mostrarErroBalcao(mensagem) {
+  const area = document.getElementById("pedidosBalcao");
+
+  if (area) {
+    area.innerHTML = `<p class="erro">${htmlSeguro(mensagem)}</p>`;
+  } else {
+    alert(mensagem);
+  }
+}
+
+// Expondo funções para os botões onclick do HTML
 window.carregarPedidos = carregarPedidos;
 window.alterarStatus = alterarStatus;
 window.entregarPedido = entregarPedido;
