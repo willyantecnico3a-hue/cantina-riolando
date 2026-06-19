@@ -129,6 +129,7 @@ function renderizarPedidos(pedidos) {
   pedidos.forEach((pedido) => {
     const itens = montarListaItens(pedido);
     const statusTexto = formatarStatus(pedido.status);
+    const pagamentoTexto = formatarStatusPagamento(pedido);
     const criadoEm = formatarDataHora(pedido.created_at);
 
     const div = document.createElement("div");
@@ -141,6 +142,7 @@ function renderizarPedidos(pedidos) {
       <p><strong>E-mail:</strong> ${htmlSeguro(pedido.cliente_email || "")}</p>
       <p><strong>Horário:</strong> ${criadoEm}</p>
       <p><strong>Status:</strong> <span class="status">${statusTexto}</span></p>
+      <p><strong>Pagamento:</strong> <span class="status-pagamento">${pagamentoTexto}</span></p>
       <p><strong>Total:</strong> ${formatarMoeda(pedido.total)}</p>
       <p><strong>Itens:</strong><br>${itens}</p>
 
@@ -473,7 +475,7 @@ function atualizarPedidosComDelay() {
 function formatarStatus(status) {
   const nomes = {
     aguardando_pagamento: "Aguardando pagamento",
-    pago: "Pago - aguardando retirada",
+    pago: "Pagamento efetuado",
     em_preparo: "Em preparo",
     pronto: "Pronto para retirada",
     entregue: "Entregue",
@@ -481,6 +483,26 @@ function formatarStatus(status) {
   };
 
   return nomes[status] || htmlSeguro(status);
+}
+
+function formatarStatusPagamento(pedido) {
+  if (pedido.status === "pago" || pedido.status_pagamento === "approved") {
+    return "Pagamento efetuado";
+  }
+
+  if (pedido.status_pagamento === "pending" || pedido.status === "aguardando_pagamento") {
+    return "Aguardando Pix";
+  }
+
+  if (pedido.status_pagamento === "expired" || pedido.status === "expirado") {
+    return "Pix expirado";
+  }
+
+  if (pedido.status_pagamento === "rejected") {
+    return "Pagamento rejeitado";
+  }
+
+  return htmlSeguro(pedido.status_pagamento || "Nao informado");
 }
 
 function formatarMoeda(valor) {

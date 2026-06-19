@@ -118,6 +118,15 @@ body {
   font-weight: bold;
 }
 
+.status-pagamento {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e8fff1;
+  color: #008a3d;
+  font-weight: bold;
+}
+
 /* Cores por status */
 .status-aguardando_pagamento {
   border-left-color: #ff6b00;
