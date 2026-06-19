@@ -1,13 +1,10 @@
 /* =========================================================
-   app.js corrigido
-   Totem Cantina Riolando
-   Funções:
-   - Carrega produtos ativos do Supabase
-   - Mostra produtos na tela
-   - Controla carrinho
-   - Cria pedido
-   - Chama a função Netlify criar-pix
-   - Mostra QR Code Pix, copia e cola e link do pagamento
+   app.js corrigido - Totem Cantina Riolando
+   Correção principal:
+   - Não cria conflito com window.moeda, window.numeroPedido e window.turnoAtual
+   - Carrega produtos do Supabase
+   - Mostra mensagem se não encontrar produtos
+   - Gera pedido Pix chamando /.netlify/functions/criar-pix
 ========================================================= */
 
 let produtos = [];
@@ -25,7 +22,7 @@ async function iniciarTotem() {
     return;
   }
 
-  await verificarTotem();
+  await verificarTotemPausado();
   await carregarProdutos();
   renderizarCarrinho();
 }
@@ -42,13 +39,13 @@ function obterBanco() {
   return null;
 }
 
-async function verificarTotem() {
-  if (typeof buscarConfig !== "function") {
+async function verificarTotemPausado() {
+  if (typeof window.buscarConfig !== "function") {
     console.warn("Função buscarConfig não encontrada. O totem seguirá ativo.");
     return;
   }
 
-  const config = await buscarConfig();
+  const config = await window.buscarConfig();
 
   if (config && config.totem_pausado) {
     const main = document.querySelector("main");
@@ -69,17 +66,36 @@ async function carregarProdutos() {
   const area = document.getElementById("produtos");
 
   if (!area) {
-    alert("Erro: não encontrei a área #produtos no HTML.");
+    alert("Erro: não encontrei a área #produtos no index.html.");
+    return;
+  }
+
+  if (!banco) {
+    area.innerHTML = `<p class="erro">Erro: Supabase não conectado.</p>`;
     return;
   }
 
   area.innerHTML = "<p>Carregando produtos...</p>";
 
-  const { data, error } = await banco
+  // Primeiro tenta buscar apenas produtos ativos
+  let { data, error } = await banco
     .from("produtos")
     .select("*")
     .eq("ativo", true)
     .order("categoria", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao carregar produtos ativos:", error);
+
+    // Se der erro por causa da coluna ativo, tenta buscar todos os produtos
+    const tentativaTodos = await banco
+      .from("produtos")
+      .select("*")
+      .order("categoria", { ascending: true });
+
+    data = tentativaTodos.data;
+    error = tentativaTodos.error;
+  }
 
   if (error) {
     console.error("Erro ao carregar produtos:", error);
@@ -93,12 +109,15 @@ async function carregarProdutos() {
 
   produtos = data || [];
 
+  console.log("Produtos carregados:", produtos);
+
   if (produtos.length === 0) {
     area.innerHTML = `
-      <p class="aviso">
-        Nenhum produto ativo encontrado.
-        Verifique no painel Admin se os produtos estão cadastrados e com ativo = true.
-      </p>
+      <div class="aviso">
+        <p><strong>Nenhum produto ativo encontrado.</strong></p>
+        <p>Confira no Supabase se os produtos estão com a coluna <strong>ativo = true</strong>.</p>
+        <p>Também confira se a tabela se chama exatamente <strong>produtos</strong>.</p>
+      </div>
     `;
     return;
   }
@@ -131,7 +150,7 @@ function renderizarProdutos() {
 
       <h3>${htmlSeguro(produto.nome || "Produto")}</h3>
       <p>${htmlSeguro(produto.categoria || "Geral")}</p>
-      <p class="preco">${moeda(produto.preco)}</p>
+      <p class="preco">${formatarMoedaLocal(produto.preco)}</p>
       <p>Disponível: ${estoque}</p>
 
       ${
@@ -198,13 +217,15 @@ function renderizarCarrinho() {
   }
 
   carrinho.forEach((item) => {
+    const subtotal = Number(item.preco || 0) * Number(item.quantidade || 0);
+
     const div = document.createElement("div");
     div.className = "item-carrinho";
 
     div.innerHTML = `
       <strong>${htmlSeguro(item.nome)}</strong><br>
       Quantidade: ${Number(item.quantidade)}<br>
-      Subtotal: ${moeda(Number(item.preco) * Number(item.quantidade))}
+      Subtotal: ${formatarMoedaLocal(subtotal)}
       <br>
       <button class="btn" onclick="removerCarrinho('${item.id}')">Remover</button>
     `;
@@ -216,7 +237,7 @@ function renderizarCarrinho() {
     return soma + Number(item.preco || 0) * Number(item.quantidade || 0);
   }, 0);
 
-  totalEl.textContent = moeda(total);
+  totalEl.textContent = formatarMoedaLocal(total);
 }
 
 function limparCarrinho() {
@@ -267,9 +288,8 @@ async function finalizarPedido() {
     return soma + Number(item.preco || 0) * Number(item.quantidade || 0);
   }, 0);
 
-  const numero = numeroPedido();
+  const numero = gerarNumeroPedidoLocal();
 
-  // 1. Cria pedido no Supabase
   const { data: pedido, error } = await banco
     .from("pedidos")
     .insert({
@@ -278,7 +298,7 @@ async function finalizarPedido() {
       cliente_email: clienteEmail,
       total,
       canal_venda: "totem",
-      turno: turnoAtual(),
+      turno: obterTurnoAtualLocal(),
       status: "aguardando_pagamento"
     })
     .select()
@@ -295,7 +315,6 @@ async function finalizarPedido() {
     return;
   }
 
-  // 2. Salva itens do pedido
   const itens = carrinho.map((item) => ({
     pedido_id: pedido.id,
     produto_id: item.id,
@@ -320,7 +339,6 @@ async function finalizarPedido() {
     return;
   }
 
-  // 3. Chama função serverless do Netlify para gerar Pix
   let respostaPix;
   let dadosPix;
 
@@ -351,7 +369,7 @@ async function finalizarPedido() {
       <div class="resultado-pedido erro">
         <h3>Erro ao gerar Pix</h3>
         <p>Não foi possível chamar a função criar-pix.</p>
-        <p>Confira se o arquivo netlify/functions/criar-pix.js existe e se o deploy do Netlify foi concluído.</p>
+        <p>Confira se o deploy do Netlify foi concluído.</p>
       </div>
     `;
     return;
@@ -409,7 +427,7 @@ async function finalizarPedido() {
     <div class="resultado-pedido pix-box">
       <h3>Pedido nº ${htmlSeguro(numero)}</h3>
 
-      <p>Total: <strong>${moeda(total)}</strong></p>
+      <p>Total: <strong>${formatarMoedaLocal(total)}</strong></p>
 
       <h3>Pagamento via Pix</h3>
       <p>Escaneie o QR Code abaixo para pagar:</p>
@@ -442,7 +460,6 @@ async function finalizarPedido() {
     </div>
   `;
 
-  // Limpa só o carrinho, mantendo o QR Code na tela
   carrinho = [];
   renderizarCarrinho();
 }
@@ -466,8 +483,12 @@ function copiarPix() {
     });
 }
 
-function moeda(valor) {
-  if (typeof window !== "undefined" && typeof window.moeda === "function") {
+function formatarMoedaLocal(valor) {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.moeda === "function" &&
+    window.moeda !== formatarMoedaLocal
+  ) {
     return window.moeda(valor);
   }
 
@@ -477,16 +498,24 @@ function moeda(valor) {
   });
 }
 
-function numeroPedido() {
-  if (typeof window !== "undefined" && typeof window.numeroPedido === "function") {
+function gerarNumeroPedidoLocal() {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.numeroPedido === "function" &&
+    window.numeroPedido !== gerarNumeroPedidoLocal
+  ) {
     return window.numeroPedido();
   }
 
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-function turnoAtual() {
-  if (typeof window !== "undefined" && typeof window.turnoAtual === "function") {
+function obterTurnoAtualLocal() {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.turnoAtual === "function" &&
+    window.turnoAtual !== obterTurnoAtualLocal
+  ) {
     return window.turnoAtual();
   }
 
@@ -515,7 +544,6 @@ function mostrarErroProdutos(mensagem) {
   }
 }
 
-// Expondo funções para onclick do HTML
 window.adicionarCarrinho = adicionarCarrinho;
 window.removerCarrinho = removerCarrinho;
 window.limparCarrinho = limparCarrinho;
