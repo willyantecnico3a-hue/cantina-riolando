@@ -232,3 +232,29 @@ body {
     width: 100%;
   }
 }
+
+
+.resultado-pedido,
+.pix-box {
+  background: #eaf7ef;
+  border-radius: 14px;
+  padding: 24px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.pix-qrcode {
+  width: 260px;
+  max-width: 100%;
+  display: block;
+  margin: 18px auto;
+}
+
+.pix-copia-cola {
+  width: 100%;
+  min-height: 90px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  word-break: break-all;
+}
