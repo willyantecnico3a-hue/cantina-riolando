@@ -1,12 +1,10 @@
-/* balcao.js corrigido
+/* =========================================================
+   balcao.js corrigido
    Sistema de Balcão - Totem Cantina Riolando
 
-   Este arquivo deve ser carregado pelo balcao.html, depois destes scripts:
-   1) https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
-   2) config.js
-   3) supabaseClient.js
-   4) balcao.js
-*/
+   Mostra automaticamente pedidos pagos pelo webhook:
+   status = "pago" aparece como "Pago - aguardando retirada".
+========================================================= */
 
 let canalPedidosBalcao = null;
 let timerAtualizacaoBalcao = null;
@@ -17,9 +15,7 @@ async function iniciarBalcao() {
   const banco = obterBanco();
 
   if (!banco) {
-    mostrarErroBalcao(
-      "Erro: conexão com o Supabase não encontrada. Verifique se config.js e supabaseClient.js foram carregados antes do balcao.js."
-    );
+    mostrarErroBalcao("Erro: conexão com o Supabase não encontrada. Verifique config.js e supabaseClient.js.");
     return;
   }
 
@@ -35,14 +31,8 @@ async function iniciarBalcao() {
 }
 
 function obterBanco() {
-  if (typeof window !== "undefined" && window.db) {
-    return window.db;
-  }
-
-  if (typeof db !== "undefined") {
-    return db;
-  }
-
+  if (typeof window !== "undefined" && window.db) return window.db;
+  if (typeof db !== "undefined") return db;
   return null;
 }
 
@@ -67,11 +57,7 @@ async function carregarPedidos() {
 
   if (error) {
     console.error("Erro ao carregar pedidos:", error);
-    area.innerHTML = `
-      <p class="erro">
-        Erro ao carregar pedidos: ${htmlSeguro(error.message)}
-      </p>
-    `;
+    area.innerHTML = `<p class="erro">Erro ao carregar pedidos: ${htmlSeguro(error.message)}</p>`;
     return;
   }
 
@@ -100,6 +86,7 @@ function renderizarPedidos(pedidos) {
       <h2>Pedido nº ${htmlSeguro(pedido.numero_pedido)}</h2>
 
       <p><strong>Cliente:</strong> ${htmlSeguro(pedido.cliente_nome)}</p>
+      <p><strong>E-mail:</strong> ${htmlSeguro(pedido.cliente_email || "")}</p>
       <p><strong>Status:</strong> <span class="status">${statusTexto}</span></p>
       <p><strong>Total:</strong> ${formatarMoeda(pedido.total)}</p>
       <p><strong>Itens:</strong><br>${itens}</p>
@@ -131,17 +118,13 @@ function montarBotoesPedido(pedido) {
   const id = htmlSeguro(pedido.id);
 
   if (pedido.status === "aguardando_pagamento") {
-    return `
-      <button class="btn principal" onclick="alterarStatus('${id}', 'pago')">
-        Confirmar Pix
-      </button>
-    `;
+    return `<button class="btn" disabled>Aguardando Pix</button>`;
   }
 
   if (pedido.status === "pago") {
     return `
       <button class="btn principal" onclick="alterarStatus('${id}', 'em_preparo')">
-        Enviar para preparo
+        Iniciar preparo
       </button>
     `;
   }
@@ -173,13 +156,7 @@ async function alterarStatus(id, status) {
     return;
   }
 
-  const statusPermitidos = [
-    "aguardando_pagamento",
-    "pago",
-    "em_preparo",
-    "pronto",
-    "entregue"
-  ];
+  const statusPermitidos = ["aguardando_pagamento", "pago", "em_preparo", "pronto", "entregue"];
 
   if (!statusPermitidos.includes(status)) {
     alert("Status inválido.");
@@ -309,10 +286,7 @@ async function entregarPedido(id) {
 
   if (erroBaixarPedido) {
     console.error("Erro ao baixar pedido:", erroBaixarPedido);
-    alert(
-      "Estoque baixado, mas houve erro ao marcar pedido como entregue: " +
-      erroBaixarPedido.message
-    );
+    alert("Estoque baixado, mas houve erro ao marcar pedido como entregue: " + erroBaixarPedido.message);
     return;
   }
 
@@ -338,16 +312,8 @@ function ouvirPedidosTempoReal() {
 
   canalPedidosBalcao = banco
     .channel("pedidos-balcao")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "pedidos" },
-      atualizarPedidosComDelay
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "itens_pedido" },
-      atualizarPedidosComDelay
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, atualizarPedidosComDelay)
+    .on("postgres_changes", { event: "*", schema: "public", table: "itens_pedido" }, atualizarPedidosComDelay)
     .subscribe((status) => {
       console.log("Realtime balcão:", status);
     });
@@ -355,18 +321,15 @@ function ouvirPedidosTempoReal() {
 
 function atualizarPedidosComDelay() {
   clearTimeout(timerAtualizacaoBalcao);
-
-  timerAtualizacaoBalcao = setTimeout(() => {
-    carregarPedidos();
-  }, 400);
+  timerAtualizacaoBalcao = setTimeout(() => carregarPedidos(), 400);
 }
 
 function formatarStatus(status) {
   const nomes = {
     aguardando_pagamento: "Aguardando pagamento",
-    pago: "Pago",
+    pago: "Pago - aguardando retirada",
     em_preparo: "Em preparo",
-    pronto: "Pronto",
+    pronto: "Pronto para retirada",
     entregue: "Entregue"
   };
 
@@ -403,7 +366,6 @@ function mostrarErroBalcao(mensagem) {
   }
 }
 
-// Expondo funções para os botões onclick do HTML
 window.carregarPedidos = carregarPedidos;
 window.alterarStatus = alterarStatus;
 window.entregarPedido = entregarPedido;
