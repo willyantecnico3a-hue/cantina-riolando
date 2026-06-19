@@ -1,6 +1,5 @@
 /* =========================================================
-   totem_ui.css
-   Visual moderno para Totem Cantina Riolando
+   totem_ui.css - Visual moderno para Totem Cantina Riolando
 ========================================================= */
 
 :root {
@@ -18,10 +17,6 @@ body {
   background: var(--cinza-bg);
   color: var(--texto);
   -webkit-tap-highlight-color: transparent;
-}
-
-.layout {
-  align-items: start;
 }
 
 .topo-produtos-totem {
@@ -120,7 +115,6 @@ body {
   border-radius: 22px;
   overflow: hidden;
   box-shadow: var(--sombra);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
   display: flex;
   flex-direction: column;
   min-height: 430px;
@@ -233,10 +227,6 @@ body {
   box-shadow: 0 5px 12px rgba(0,166,81,0.24);
 }
 
-.btn-produto:active {
-  transform: scale(0.97);
-}
-
 .btn-produto.esgotado,
 .btn-produto:disabled {
   background: #9ca3af;
@@ -318,16 +308,6 @@ body {
   border-radius: 12px;
   font-weight: 800;
   cursor: pointer;
-}
-
-.pulse-carrinho {
-  animation: pulseCarrinho 0.35s ease;
-}
-
-@keyframes pulseCarrinho {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.018); box-shadow: 0 0 0 5px rgba(0,166,81,0.12); }
-  100% { transform: scale(1); }
 }
 
 .loading-produtos,

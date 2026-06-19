@@ -1,6 +1,6 @@
 /* =========================================================
-   app.js COMPLETO - Totem Cantina Riolando
-   UI/UX de totem com categorias, rolagem horizontal e item esgotado cinza.
+   app.js COMPLETO E CORRIGIDO - Totem Cantina Riolando
+   Corrige: "await is only valid in async functions"
 ========================================================= */
 
 let produtos = [];
@@ -9,7 +9,7 @@ let categoriaAtual = "Todos";
 
 const CATEGORIAS_PADRAO = ["Todos", "Bebidas", "Lanches", "Bolos", "Doces", "Salgados", "Combos", "Outros"];
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", async function () {
   await iniciarTotem();
 });
 
@@ -74,7 +74,6 @@ async function carregarProdutos() {
   let data = [];
   let error = null;
 
-  // Busca produtos ativos. Produto com estoque 0 continua aparecendo como esgotado.
   const respostaAtivos = await banco
     .from("produtos")
     .select("*")
@@ -85,7 +84,6 @@ async function carregarProdutos() {
   data = respostaAtivos.data;
   error = respostaAtivos.error;
 
-  // Se sua tabela ainda não tiver coluna ativo, busca todos.
   if (error) {
     console.warn("Erro ao buscar produtos ativos. Tentando buscar todos:", error);
 
@@ -118,8 +116,8 @@ async function carregarProdutos() {
     area.innerHTML = `
       <div class="aviso-produtos">
         <h3>Nenhum produto encontrado</h3>
-        <p>Confira no Admin se os produtos estão cadastrados.</p>
-        <p>Se existir a coluna <strong>ativo</strong>, deixe os produtos com <strong>ativo = true</strong>.</p>
+        <p>Confira no painel Admin se os produtos estão cadastrados.</p>
+        <p>Se existir a coluna <strong>ativo</strong>, os produtos precisam estar com <strong>ativo = true</strong>.</p>
       </div>
     `;
     return;
@@ -132,6 +130,7 @@ async function carregarProdutos() {
 
 function montarEstruturaProdutos() {
   const area = document.getElementById("produtos");
+  if (!area) return;
 
   area.innerHTML = `
     <div class="topo-produtos-totem">
@@ -148,8 +147,11 @@ function montarEstruturaProdutos() {
 }
 
 function obterCategorias() {
-  const categoriasBanco = produtos.map((produto) => normalizarCategoria(produto.categoria)).filter(Boolean);
-  return [...new Set([...CATEGORIAS_PADRAO, ...categoriasBanco])];
+  const categoriasBanco = produtos
+    .map(function (produto) { return normalizarCategoria(produto.categoria); })
+    .filter(Boolean);
+
+  return [...new Set(CATEGORIAS_PADRAO.concat(categoriasBanco))];
 }
 
 function normalizarCategoria(categoria) {
@@ -171,19 +173,20 @@ function renderizarCategorias() {
   const area = document.getElementById("categoriasProdutos");
   if (!area) return;
 
+  const categorias = obterCategorias();
   area.innerHTML = "";
 
-  obterCategorias().forEach((categoria) => {
+  categorias.forEach(function (categoria) {
     const totalCategoria = categoria === "Todos"
       ? produtos.length
-      : produtos.filter((produto) => normalizarCategoria(produto.categoria) === categoria).length;
+      : produtos.filter(function (produto) { return normalizarCategoria(produto.categoria) === categoria; }).length;
 
     if (categoria !== "Todos" && totalCategoria === 0) return;
 
     const btn = document.createElement("button");
     btn.className = categoria === categoriaAtual ? "categoria-chip ativa" : "categoria-chip";
     btn.innerHTML = `<span>${htmlSeguro(categoria)}</span><small>${totalCategoria}</small>`;
-    btn.onclick = () => filtrarCategoria(categoria);
+    btn.onclick = function () { filtrarCategoria(categoria); };
     area.appendChild(btn);
   });
 }
@@ -195,27 +198,31 @@ function filtrarCategoria(categoria) {
 }
 
 function renderizarProdutos() {
-  const lista = document.getElementById("listaProdutos");
-  if (!lista) return;
+  let lista = document.getElementById("listaProdutos");
+
+  if (!lista) {
+    montarEstruturaProdutos();
+    renderizarCategorias();
+    lista = document.getElementById("listaProdutos");
+    if (!lista) return;
+  }
 
   let produtosFiltrados = produtos;
+
   if (categoriaAtual !== "Todos") {
-    produtosFiltrados = produtos.filter((produto) => normalizarCategoria(produto.categoria) === categoriaAtual);
+    produtosFiltrados = produtos.filter(function (produto) {
+      return normalizarCategoria(produto.categoria) === categoriaAtual;
+    });
   }
 
   lista.innerHTML = "";
 
   if (produtosFiltrados.length === 0) {
-    lista.innerHTML = `
-      <div class="aviso-produtos">
-        <h3>Nenhum produto nesta categoria</h3>
-        <p>Escolha outra categoria acima.</p>
-      </div>
-    `;
+    lista.innerHTML = `<div class="aviso-produtos"><h3>Nenhum produto nesta categoria</h3><p>Escolha outra categoria acima.</p></div>`;
     return;
   }
 
-  produtosFiltrados.forEach((produto) => {
+  produtosFiltrados.forEach(function (produto) {
     const estoque = Number(produto.estoque || 0);
     const semEstoque = estoque <= 0;
 
@@ -238,6 +245,7 @@ function renderizarProdutos() {
             <p class="preco">${formatarMoedaLocal(produto.preco)}</p>
             <p class="estoque-info">Estoque: ${estoque}</p>
           </div>
+
           ${semEstoque
             ? `<button class="btn-produto esgotado" disabled>Indisponível</button>`
             : `<button class="btn-produto" onclick="adicionarCarrinho('${produto.id}')">Adicionar</button>`}
@@ -250,7 +258,7 @@ function renderizarProdutos() {
 }
 
 function adicionarCarrinho(id) {
-  const produto = produtos.find((p) => String(p.id) === String(id));
+  const produto = produtos.find(function (p) { return String(p.id) === String(id); });
 
   if (!produto) {
     alert("Produto não encontrado.");
@@ -262,7 +270,7 @@ function adicionarCarrinho(id) {
     return;
   }
 
-  const item = carrinho.find((i) => String(i.id) === String(id));
+  const item = carrinho.find(function (i) { return String(i.id) === String(id); });
   const quantidadeAtual = item ? Number(item.quantidade || 0) : 0;
 
   if (quantidadeAtual + 1 > Number(produto.estoque || 0)) {
@@ -274,7 +282,6 @@ function adicionarCarrinho(id) {
   else carrinho.push({ ...produto, quantidade: 1 });
 
   renderizarCarrinho();
-  animarCarrinho();
 }
 
 function aumentarQuantidade(id) {
@@ -282,27 +289,26 @@ function aumentarQuantidade(id) {
 }
 
 function diminuirQuantidade(id) {
-  const item = carrinho.find((i) => String(i.id) === String(id));
+  const item = carrinho.find(function (i) { return String(i.id) === String(id); });
   if (!item) return;
 
   item.quantidade--;
 
   if (item.quantidade <= 0) {
-    carrinho = carrinho.filter((i) => String(i.id) !== String(id));
+    carrinho = carrinho.filter(function (i) { return String(i.id) !== String(id); });
   }
 
   renderizarCarrinho();
 }
 
 function removerCarrinho(id) {
-  carrinho = carrinho.filter((item) => String(item.id) !== String(id));
+  carrinho = carrinho.filter(function (item) { return String(item.id) !== String(id); });
   renderizarCarrinho();
 }
 
 function renderizarCarrinho() {
   const area = document.getElementById("itensCarrinho");
   const totalEl = document.getElementById("total");
-
   if (!area || !totalEl) return;
 
   area.innerHTML = "";
@@ -311,7 +317,7 @@ function renderizarCarrinho() {
     area.innerHTML = `<div class="carrinho-vazio"><p>Nenhum item no carrinho.</p></div>`;
   }
 
-  carrinho.forEach((item) => {
+  carrinho.forEach(function (item) {
     const subtotal = Number(item.preco || 0) * Number(item.quantidade || 0);
     const div = document.createElement("div");
     div.className = "item-carrinho";
@@ -335,15 +341,11 @@ function renderizarCarrinho() {
     area.appendChild(div);
   });
 
-  const total = carrinho.reduce((soma, item) => soma + Number(item.preco || 0) * Number(item.quantidade || 0), 0);
-  totalEl.textContent = formatarMoedaLocal(total);
-}
+  const total = carrinho.reduce(function (soma, item) {
+    return soma + Number(item.preco || 0) * Number(item.quantidade || 0);
+  }, 0);
 
-function animarCarrinho() {
-  const cardPedido = document.querySelector("aside, .card-pedido, .pedido-card");
-  if (!cardPedido) return;
-  cardPedido.classList.add("pulse-carrinho");
-  setTimeout(() => cardPedido.classList.remove("pulse-carrinho"), 350);
+  totalEl.textContent = formatarMoedaLocal(total);
 }
 
 function limparCarrinho() {
@@ -383,7 +385,10 @@ async function finalizarPedido() {
 
   resultado.innerHTML = `<div class="resultado-pedido pix-box"><h3>Gerando Pix...</h3><p>Aguarde enquanto o QR Code é criado.</p></div>`;
 
-  const total = carrinho.reduce((soma, item) => soma + Number(item.preco || 0) * Number(item.quantidade || 0), 0);
+  const total = carrinho.reduce(function (soma, item) {
+    return soma + Number(item.preco || 0) * Number(item.quantidade || 0);
+  }, 0);
+
   const numero = gerarNumeroPedidoLocal();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -393,7 +398,7 @@ async function finalizarPedido() {
       numero_pedido: numero,
       cliente_nome: clienteNome,
       cliente_email: clienteEmail,
-      total,
+      total: total,
       canal_venda: detectarCanalVenda(),
       turno: obterTurnoAtualLocal(),
       status: "aguardando_pagamento",
@@ -408,14 +413,16 @@ async function finalizarPedido() {
     return;
   }
 
-  const itens = carrinho.map((item) => ({
-    pedido_id: pedido.id,
-    produto_id: item.id,
-    produto_nome: item.nome,
-    quantidade: Number(item.quantidade),
-    preco_unitario: Number(item.preco),
-    subtotal: Number(item.preco) * Number(item.quantidade)
-  }));
+  const itens = carrinho.map(function (item) {
+    return {
+      pedido_id: pedido.id,
+      produto_id: item.id,
+      produto_nome: item.nome,
+      quantidade: Number(item.quantidade),
+      preco_unitario: Number(item.preco),
+      subtotal: Number(item.preco) * Number(item.quantidade)
+    };
+  });
 
   const { error: erroItens } = await banco.from("itens_pedido").insert(itens);
 
@@ -435,14 +442,14 @@ async function finalizarPedido() {
       body: JSON.stringify({
         pedido_id: pedido.id,
         numero_pedido: numero,
-        total,
+        total: total,
         valor: total,
         expires_at: expiresAt,
         description: `Pedido ${numero} - Cantina Riolando`,
         descricao: `Pedido ${numero} - Cantina Riolando`,
         cliente_nome: clienteNome,
         cliente_email: clienteEmail,
-        itens
+        itens: itens
       })
     });
 
@@ -459,9 +466,25 @@ async function finalizarPedido() {
     return;
   }
 
-  const qrCodeBase64 = dadosPix?.qr_code_base64 || dadosPix?.qrCodeBase64 || dadosPix?.point_of_interaction?.transaction_data?.qr_code_base64 || dadosPix?.payment?.point_of_interaction?.transaction_data?.qr_code_base64;
-  const qrCodeTexto = dadosPix?.qr_code || dadosPix?.qrCode || dadosPix?.copia_e_cola || dadosPix?.copiaECola || dadosPix?.point_of_interaction?.transaction_data?.qr_code || dadosPix?.payment?.point_of_interaction?.transaction_data?.qr_code;
-  const ticketUrl = dadosPix?.ticket_url || dadosPix?.ticketUrl || dadosPix?.point_of_interaction?.transaction_data?.ticket_url || dadosPix?.payment?.point_of_interaction?.transaction_data?.ticket_url;
+  const qrCodeBase64 =
+    dadosPix?.qr_code_base64 ||
+    dadosPix?.qrCodeBase64 ||
+    dadosPix?.point_of_interaction?.transaction_data?.qr_code_base64 ||
+    dadosPix?.payment?.point_of_interaction?.transaction_data?.qr_code_base64;
+
+  const qrCodeTexto =
+    dadosPix?.qr_code ||
+    dadosPix?.qrCode ||
+    dadosPix?.copia_e_cola ||
+    dadosPix?.copiaECola ||
+    dadosPix?.point_of_interaction?.transaction_data?.qr_code ||
+    dadosPix?.payment?.point_of_interaction?.transaction_data?.qr_code;
+
+  const ticketUrl =
+    dadosPix?.ticket_url ||
+    dadosPix?.ticketUrl ||
+    dadosPix?.point_of_interaction?.transaction_data?.ticket_url ||
+    dadosPix?.payment?.point_of_interaction?.transaction_data?.ticket_url;
 
   if (!qrCodeBase64 && !qrCodeTexto && !ticketUrl) {
     resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Pix criado, mas QR Code não foi encontrado</h3><p>A função respondeu, mas não enviou QR Code ou copia e cola.</p></div>`;
@@ -472,11 +495,20 @@ async function finalizarPedido() {
     <div class="resultado-pedido pix-box">
       <h3>Pedido nº ${htmlSeguro(numero)}</h3>
       <p>Total: <strong>${formatarMoedaLocal(total)}</strong></p>
+
       <h3>Pagamento via Pix</h3>
       <p>Escaneie o QR Code abaixo para pagar:</p>
+
       ${qrCodeBase64 ? `<img class="pix-qrcode" src="data:image/png;base64,${qrCodeBase64}" alt="QR Code Pix">` : ""}
-      ${qrCodeTexto ? `<p><strong>Pix copia e cola:</strong></p><textarea class="pix-copia-cola" readonly>${htmlSeguro(qrCodeTexto)}</textarea><button class="btn principal" onclick="copiarPix()">Copiar código Pix</button>` : ""}
+
+      ${qrCodeTexto ? `
+        <p><strong>Pix copia e cola:</strong></p>
+        <textarea class="pix-copia-cola" readonly>${htmlSeguro(qrCodeTexto)}</textarea>
+        <button class="btn principal" onclick="copiarPix()">Copiar código Pix</button>
+      ` : ""}
+
       ${ticketUrl ? `<p><a class="btn" href="${htmlSeguro(ticketUrl)}" target="_blank" rel="noopener noreferrer">Abrir pagamento</a></p>` : ""}
+
       <p class="aviso-pix">Este Pix expira em 5 minutos. Após a confirmação, o pedido aparece no balcão.</p>
     </div>
   `;
@@ -487,6 +519,7 @@ async function finalizarPedido() {
 
 function copiarPix() {
   const campo = document.querySelector(".pix-copia-cola");
+
   if (!campo) {
     alert("Código Pix não encontrado.");
     return;
@@ -496,8 +529,8 @@ function copiarPix() {
   campo.setSelectionRange(0, 99999);
 
   navigator.clipboard.writeText(campo.value)
-    .then(() => alert("Código Pix copiado!"))
-    .catch(() => {
+    .then(function () { alert("Código Pix copiado!"); })
+    .catch(function () {
       document.execCommand("copy");
       alert("Código Pix copiado!");
     });
