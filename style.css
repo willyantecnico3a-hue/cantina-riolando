@@ -246,3 +246,252 @@ input, select {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ===============================
+   ESTILO GERAL - CANTINA RIOLANDO
+   Pode colar no final do seu style.css
+================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f6f8;
+  color: #111827;
+}
+
+/* Topo / Cabeçalho */
+.topo {
+  background: #0f4c81;
+  color: #ffffff;
+  padding: 18px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.topo h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.topo p {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+.topo nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.topo nav a {
+  color: #ffffff;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.topo nav a:hover {
+  background: rgba(255, 255, 255, 0.30);
+}
+
+/* Container principal */
+.container {
+  width: min(1200px, 94%);
+  margin: 24px auto;
+}
+
+/* Cartões */
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+}
+
+.card h2 {
+  margin-top: 0;
+  color: #0f4c81;
+}
+
+/* Lista de pedidos */
+.lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* Pedido individual */
+.pedido {
+  background: #ffffff;
+  border: 2px solid #dce3ea;
+  border-left: 8px solid #0f4c81;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.pedido h2 {
+  margin: 0 0 12px;
+  font-size: 23px;
+  color: #0f4c81;
+}
+
+.pedido p {
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+.status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e8eef5;
+  color: #0f4c81;
+  font-weight: bold;
+}
+
+/* Cores por status */
+.status-aguardando_pagamento {
+  border-left-color: #ff6b00;
+}
+
+.status-pago {
+  border-left-color: #00a651;
+}
+
+.status-em_preparo {
+  border-left-color: #0f4c81;
+}
+
+.status-pronto {
+  border-left-color: #d62828;
+}
+
+/* Botões */
+.acoes-pedido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 13px;
+  cursor: pointer;
+  font-weight: bold;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn:hover {
+  opacity: 0.88;
+}
+
+.btn.principal {
+  background: #00a651;
+  color: #ffffff;
+}
+
+.btn.alerta {
+  background: #d62828;
+  color: #ffffff;
+}
+
+/* Mensagens de erro */
+.erro {
+  color: #d62828;
+  background: #fff0f0;
+  border: 1px solid #f5b5b5;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+/* Área do QR Code Pix */
+.qrcode-box,
+.qr-code-box,
+.pix-box,
+.resultado-pedido {
+  background: #ffffff;
+  border: 2px solid #dce3ea;
+  border-radius: 14px;
+  padding: 18px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.qrcode-box img,
+.qr-code-box img,
+.pix-box img,
+.resultado-pedido img {
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 12px auto;
+}
+
+.codigo-pix,
+.pix-copia-cola {
+  width: 100%;
+  min-height: 90px;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+/* Responsivo para celular */
+@media (max-width: 700px) {
+  .topo {
+    align-items: flex-start;
+  }
+
+  .topo h1 {
+    font-size: 22px;
+  }
+
+  .topo nav {
+    width: 100%;
+  }
+
+  .topo nav a {
+    flex: 1;
+    text-align: center;
+  }
+
+  .container {
+    width: 96%;
+    margin: 14px auto;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .lista {
+    grid-template-columns: 1fr;
+  }
+
+  .pedido h2 {
+    font-size: 20px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
