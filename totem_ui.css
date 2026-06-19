@@ -352,7 +352,58 @@ textarea {
   touch-action: manipulation;
 }
 
+.modo-totem .layout-totem {
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 24px;
+  padding: 24px;
+}
+
+.modo-totem .card {
+  border-radius: 16px;
+}
+
+.modo-totem .painel-produtos-totem h2,
+.modo-totem .carrinho-totem h2 {
+  font-size: 30px;
+}
+
+.modo-totem .produtos-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px;
+}
+
+.modo-totem .produto-card {
+  min-height: 470px;
+}
+
+.modo-totem .produto-imagem-box {
+  height: 195px;
+}
+
+.modo-totem .categoria-chip {
+  min-width: 152px;
+  min-height: 68px;
+  font-size: 18px;
+}
+
+.modo-totem .btn-produto,
+.modo-totem .btn,
+.modo-totem input {
+  min-height: 56px;
+  font-size: 18px;
+}
+
+.modo-totem .carrinho-totem {
+  position: sticky;
+  top: 18px;
+  align-self: start;
+}
+
 @media (max-width: 900px) {
+  .modo-totem .layout-totem {
+    grid-template-columns: 1fr;
+  }
+
   .produtos-grid {
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   }

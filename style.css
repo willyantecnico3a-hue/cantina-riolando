@@ -419,6 +419,62 @@ body {
   border-radius: 8px;
 }
 
+.pagina-inicial {
+  min-height: 100vh;
+  background: #eef4f8;
+}
+
+.home-cantina {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.home-painel {
+  width: min(620px, 100%);
+  background: #ffffff;
+  border: 1px solid #dce3ea;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 8px 26px rgba(15, 76, 129, 0.14);
+}
+
+.home-etiqueta {
+  color: #008f5a;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.home-painel h1 {
+  color: #0f4c81;
+  font-size: 36px;
+  margin: 0 0 10px;
+}
+
+.home-texto {
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.home-acoes {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.home-links {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.home-links a {
+  color: #0f4c81;
+  text-decoration: none;
+  font-weight: 700;
+}
+
 /* Área do QR Code Pix */
 .qrcode-box,
 .qr-code-box,

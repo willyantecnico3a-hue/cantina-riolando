@@ -3,29 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cantina Riolando - App</title>
+  <meta name="theme-color" content="#008f5a" />
+  <title>App Cantina Riolando</title>
+  <link rel="manifest" href="manifest-app.json" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="totem_ui.css" />
+  <link rel="stylesheet" href="app_mobile.css" />
 </head>
-<body>
-  <header class="topo">
+<body class="modo-app">
+  <header class="topo topo-app">
     <div>
       <h1>App Cantina Riolando</h1>
-      <p>Versão responsiva para celular</p>
+      <p>Pedido pelo celular</p>
     </div>
     <nav>
-      <a href="index.html">Totem</a>
-      <a href="balcao.html">Balcão</a>
-      <a href="admin.html">Admin</a>
-      <a href="app.html">App</a>
+      <a href="index.html">Inicio</a>
+      <a href="balcao.html">Balcao</a>
     </nav>
   </header>
 
-  <main class="container">
-    <section class="card">
-      <h2>Comprar pelo celular</h2>
-      <p>Esta tela usa a mesma lógica do totem, mas com visual adaptado para celular.</p>
-      <a class="btn principal linkbotao" href="index.html">Abrir cardápio</a>
+  <main class="app-shell">
+    <section class="app-instalar">
+      <div>
+        <strong>Instale no celular</strong>
+        <p>Acesse a cantina mais rapido pela tela inicial.</p>
+      </div>
+      <button id="installPwaButton" class="btn" type="button" hidden>Instalar</button>
     </section>
+
+    <section class="card app-card-produtos">
+      <h2>Cardapio</h2>
+      <div id="produtos" class="grid-produtos"></div>
+    </section>
+
+    <aside class="card carrinho app-carrinho">
+      <h2>Meu pedido</h2>
+
+      <label>Nome do aluno</label>
+      <input id="clienteNome" autocomplete="name" placeholder="Ex: Joao Silva" />
+
+      <label>E-mail institucional</label>
+      <input id="clienteEmail" type="email" autocomplete="email" placeholder="exemplo@aluno.educacao.sp.gov.br" />
+
+      <div id="itensCarrinho"></div>
+
+      <h3>Total: <span id="total">R$ 0,00</span></h3>
+
+      <button class="btn principal" onclick="finalizarPedido()">Gerar Pix</button>
+      <button class="btn limpar" onclick="limparCarrinho()">Limpar</button>
+
+      <div id="resultadoPedido" class="resultado"></div>
+    </aside>
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

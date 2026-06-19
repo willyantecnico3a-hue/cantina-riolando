@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0f4c81"/>
+  <circle cx="256" cy="256" r="154" fill="#ffffff"/>
+  <path d="M154 244h204v42c0 58-45 103-102 103s-102-45-102-103v-42z" fill="#008f5a"/>
+  <path d="M184 197h144c20 0 36 16 36 36v11H148v-11c0-20 16-36 36-36z" fill="#ff8c00"/>
+  <text x="256" y="321" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="700" fill="#ffffff">CR</text>
+</svg>

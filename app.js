@@ -10,6 +10,7 @@ let categoriaAtual = "Todos";
 const CATEGORIAS_PADRAO = ["Todos", "Bebidas", "Lanches", "Bolos", "Doces", "Salgados", "Combos", "Outros"];
 
 document.addEventListener("DOMContentLoaded", async function () {
+  prepararPwa();
   await iniciarTotem();
 });
 
@@ -529,8 +530,40 @@ function copiarPix() {
 
 function detectarCanalVenda() {
   const pagina = window.location.pathname.toLowerCase();
-  if (pagina.includes("app.html")) return "smartphone";
-  return "totem";
+  if (pagina.includes("totem")) return "totem";
+  if (pagina.includes("app")) return "app";
+  return "site";
+}
+
+function prepararPwa() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/service-worker.js").catch(function (erro) {
+      console.warn("Nao foi possivel registrar o service worker:", erro);
+    });
+  }
+
+  let promptInstalacao = null;
+  const botaoInstalar = document.getElementById("installPwaButton");
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    promptInstalacao = event;
+
+    if (botaoInstalar) {
+      botaoInstalar.hidden = false;
+    }
+  });
+
+  if (botaoInstalar) {
+    botaoInstalar.addEventListener("click", async function () {
+      if (!promptInstalacao) return;
+
+      promptInstalacao.prompt();
+      await promptInstalacao.userChoice;
+      promptInstalacao = null;
+      botaoInstalar.hidden = true;
+    });
+  }
 }
 
 function formatarMoedaLocal(valor) {
