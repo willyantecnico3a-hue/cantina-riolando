@@ -84,7 +84,7 @@ exports.handler = async function (event) {
       });
     }
 
-    const expiresAt = body.expires_at || new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const expiresAt = body.expires_at || new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
     const webhookUrl =
       process.env.MP_WEBHOOK_URL ||
