@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cantina Riolando - Administração</title>
+  <title>Cantina Riolando - Administracao</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topo">
     <div>
       <h1>Painel Administrativo</h1>
-      <p>Produtos, preços, estoque, promoções e relatórios</p>
+      <p>Produtos, precos, estoque e relatorios</p>
     </div>
     <nav>
       <a href="index.html">Totem</a>
-      <a href="balcao.html">Balcão</a>
+      <a href="balcao.html">Balcao</a>
       <a href="admin.html">Admin</a>
       <a href="app.html">App</a>
     </nav>
@@ -29,7 +29,7 @@
       <label>Categoria</label>
       <input id="produtoCategoria" placeholder="Ex: Bebidas" />
 
-      <label>Preço</label>
+      <label>Preco</label>
       <input id="produtoPreco" type="number" step="0.01" placeholder="Ex: 5.00" />
 
       <label>Estoque</label>
@@ -42,9 +42,13 @@
     </section>
 
     <section class="card">
-      <h2>Configurações</h2>
-      <label>Chave Pix da cantina/APM</label>
-      <input id="pixChave" placeholder="Digite a chave Pix" />
+      <h2>Configuracoes</h2>
+      <p class="aviso-pix">
+        O Pix automatico e confirmado pelo Mercado Pago. Configure MP_ACCESS_TOKEN no Netlify.
+      </p>
+
+      <label>Chave Pix da cantina/APM (referencia)</label>
+      <input id="pixChave" placeholder="Opcional" />
 
       <label>Nome do recebedor</label>
       <input id="pixNome" placeholder="Ex: APM Riolando Canno" />
@@ -52,7 +56,7 @@
       <label>Cidade</label>
       <input id="pixCidade" placeholder="Ex: DIADEMA" />
 
-      <button class="btn principal" onclick="salvarConfig()">Salvar Pix</button>
+      <button class="btn principal" onclick="salvarConfig()">Salvar referencia Pix</button>
       <button class="btn alerta" onclick="alternarTotem()">Pausar/Ativar totem</button>
       <p id="statusTotem"></p>
     </section>
@@ -63,17 +67,17 @@
     </section>
 
     <section class="card grande">
-      <h2>Relatórios</h2>
+      <h2>Resumo de pedidos</h2>
       <div class="filtros">
         <select id="periodoRelatorio">
-          <option value="dia">Diário</option>
+          <option value="dia">Diario</option>
           <option value="semana">Semanal</option>
           <option value="mes">Mensal</option>
           <option value="ano">Anual</option>
         </select>
         <select id="turnoRelatorio">
           <option value="">Todos os turnos</option>
-          <option value="manha">Manhã</option>
+          <option value="manha">Manha</option>
           <option value="tarde">Tarde</option>
           <option value="noite">Noite</option>
         </select>
@@ -82,56 +86,42 @@
 
       <div id="relatorios" class="relatorios"></div>
     </section>
+
+    <section class="card grande">
+      <h2>Relatorio de vendas confirmadas</h2>
+      <p>
+        Este relatorio soma somente pagamentos Pix confirmados.
+        Pedidos aguardando pagamento ou expirados nao entram no total.
+      </p>
+
+      <div class="resumo-relatorio">
+        <div>
+          <strong>Total confirmado</strong>
+          <p id="totalConfirmado">R$ 0,00</p>
+        </div>
+
+        <div>
+          <strong>Vendas confirmadas</strong>
+          <p id="qtdVendasConfirmadas">0</p>
+        </div>
+
+        <div>
+          <strong>Ultima atualizacao</strong>
+          <p id="ultimaAtualizacaoRelatorio">--</p>
+        </div>
+      </div>
+
+      <h3>Detalhes das compras</h3>
+      <div id="relatorioConfirmados" class="lista-relatorio">
+        <p>Carregando relatorio...</p>
+      </div>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script src="supabaseClient.js"></script>
   <script src="admin.js"></script>
-
-
-  <!-- =========================================================
-     BLOCO HTML DO RELATÓRIO
-     Cole dentro do admin.html, no local onde você quer o relatório.
-     Antes do fechamento do </body>, carregue:
-========================================================= -->
-
-<section class="card">
-  <h2>Relatório de vendas confirmadas</h2>
-  <p>
-    Este relatório soma somente pagamentos Pix confirmados.
-    Pedidos aguardando pagamento ou expirados não entram no total.
-  </p>
-
-  <div class="resumo-relatorio">
-    <div>
-      <strong>Total confirmado</strong>
-      <p id="totalConfirmado">R$ 0,00</p>
-    </div>
-
-    <div>
-      <strong>Vendas confirmadas</strong>
-      <p id="qtdVendasConfirmadas">0</p>
-    </div>
-
-    <div>
-      <strong>Última atualização</strong>
-      <p id="ultimaAtualizacaoRelatorio">--</p>
-    </div>
-  </div>
-
-  <h3>Detalhes das compras</h3>
-  <div id="relatorioConfirmados" class="lista-relatorio">
-    <p>Carregando relatório...</p>
-  </div>
-</section>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="supabaseClient.js"></script>
-<script src="admin.js"></script>
-<script src="relatorio.js"></script>
-
-
+  <script src="relatorio.js"></script>
 </body>
 </html>

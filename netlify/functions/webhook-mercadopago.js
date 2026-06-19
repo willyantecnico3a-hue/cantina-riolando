@@ -109,6 +109,8 @@ exports.handler = async function (event) {
       });
     }
 
+    const pagoEm = new Date().toISOString();
+
     const resultadoUpdate = await atualizarPedido({
       SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY,
@@ -119,7 +121,8 @@ exports.handler = async function (event) {
         status_pagamento: "approved",
         mp_status_detail: statusDetail,
         status: "pago",
-        pago_em: new Date().toISOString()
+        pago_em: pagoEm,
+        horario_pagamento_confirmado: pagoEm
       }
     });
 
@@ -228,7 +231,10 @@ function headersSupabase(serviceRoleKey) {
 function resposta(statusCode, body) {
   return {
     statusCode,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    },
     body: JSON.stringify(body)
   };
 }

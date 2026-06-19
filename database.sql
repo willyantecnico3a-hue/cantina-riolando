@@ -27,6 +27,19 @@ create table if not exists pedidos (
   created_at timestamp with time zone default now()
 );
 
+alter table pedidos add column if not exists status_pagamento text default 'pending';
+alter table pedidos add column if not exists mercado_pago_payment_id text;
+alter table pedidos add column if not exists mp_status_detail text;
+alter table pedidos add column if not exists pix_qr_code text;
+alter table pedidos add column if not exists pix_qr_code_base64 text;
+alter table pedidos add column if not exists pix_ticket_url text;
+alter table pedidos add column if not exists expires_at timestamp with time zone;
+alter table pedidos add column if not exists pago_em timestamp with time zone;
+alter table pedidos add column if not exists horario_pagamento_confirmado timestamp with time zone;
+alter table pedidos add column if not exists cancelado_em timestamp with time zone;
+alter table pedidos add column if not exists arquivado boolean default false;
+alter table pedidos add column if not exists arquivado_em timestamp with time zone;
+
 create table if not exists itens_pedido (
   id uuid primary key default uuid_generate_v4(),
   pedido_id uuid references pedidos(id) on delete cascade,
@@ -124,3 +137,56 @@ drop policy if exists "config_insert_publico_prototipo" on configuracoes;
 create policy "config_insert_publico_prototipo"
 on configuracoes for insert
 with check (true);
+
+create or replace function cancelar_pedidos_expirados()
+returns integer
+language plpgsql
+as $$
+declare
+  total_cancelados integer;
+begin
+  update pedidos
+  set
+    status = 'expirado',
+    status_pagamento = 'expired',
+    cancelado_em = now()
+  where status = 'aguardando_pagamento'
+    and (
+      (expires_at is not null and expires_at < now())
+      or (expires_at is null and created_at < now() - interval '5 minutes')
+    );
+
+  get diagnostics total_cancelados = row_count;
+  return total_cancelados;
+end;
+$$;
+
+create or replace view relatorio_vendas_confirmadas as
+select
+  p.id,
+  p.numero_pedido,
+  p.cliente_nome,
+  p.cliente_email,
+  p.canal_venda,
+  p.turno,
+  p.total,
+  p.status,
+  p.status_pagamento,
+  p.created_at as horario_compra,
+  coalesce(p.horario_pagamento_confirmado, p.pago_em) as horario_pagamento_confirmado,
+  coalesce(
+    json_agg(
+      json_build_object(
+        'produto_nome', i.produto_nome,
+        'quantidade', i.quantidade,
+        'preco_unitario', i.preco_unitario,
+        'subtotal', i.subtotal
+      )
+      order by i.created_at
+    ) filter (where i.id is not null),
+    '[]'::json
+  ) as itens
+from pedidos p
+left join itens_pedido i on i.pedido_id = p.id
+where p.status_pagamento = 'approved'
+group by p.id;

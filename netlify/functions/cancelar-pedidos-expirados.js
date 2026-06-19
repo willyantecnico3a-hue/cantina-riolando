@@ -42,12 +42,13 @@ exports.handler = async function (event) {
 
     console.error("Erro na RPC cancelar_pedidos_expirados:", rpcText);
 
+    const agora = new Date().toISOString();
     const cincoMinutosAtras = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     const patchUrl =
       `${SUPABASE_URL}/rest/v1/pedidos` +
       `?status=eq.aguardando_pagamento` +
-      `&created_at=lt.${encodeURIComponent(cincoMinutosAtras)}`;
+      `&or=(expires_at.lt.${encodeURIComponent(agora)},and(expires_at.is.null,created_at.lt.${encodeURIComponent(cincoMinutosAtras)}))`;
 
     const patchResp = await fetch(patchUrl, {
       method: "PATCH",
@@ -106,7 +107,10 @@ function headersSupabase(serviceRoleKey) {
 function resposta(statusCode, body) {
   return {
     statusCode,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    },
     body: JSON.stringify(body)
   };
 }

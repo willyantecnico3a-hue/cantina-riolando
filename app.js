@@ -392,30 +392,8 @@ async function finalizarPedido() {
   const numero = gerarNumeroPedidoLocal();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  const { data: pedido, error } = await banco
-    .from("pedidos")
-    .insert({
-      numero_pedido: numero,
-      cliente_nome: clienteNome,
-      cliente_email: clienteEmail,
-      total: total,
-      canal_venda: detectarCanalVenda(),
-      turno: obterTurnoAtualLocal(),
-      status: "aguardando_pagamento",
-      expires_at: expiresAt
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Erro ao criar pedido:", error);
-    resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Erro ao criar pedido</h3><p>${htmlSeguro(error.message)}</p></div>`;
-    return;
-  }
-
   const itens = carrinho.map(function (item) {
     return {
-      pedido_id: pedido.id,
       produto_id: item.id,
       produto_nome: item.nome,
       quantidade: Number(item.quantidade),
@@ -423,14 +401,6 @@ async function finalizarPedido() {
       subtotal: Number(item.preco) * Number(item.quantidade)
     };
   });
-
-  const { error: erroItens } = await banco.from("itens_pedido").insert(itens);
-
-  if (erroItens) {
-    console.error("Erro ao salvar itens:", erroItens);
-    resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Erro ao salvar itens</h3><p>${htmlSeguro(erroItens.message)}</p></div>`;
-    return;
-  }
 
   let respostaPix;
   let dadosPix;
@@ -440,7 +410,6 @@ async function finalizarPedido() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        pedido_id: pedido.id,
         numero_pedido: numero,
         total: total,
         valor: total,
@@ -449,6 +418,8 @@ async function finalizarPedido() {
         descricao: `Pedido ${numero} - Cantina Riolando`,
         cliente_nome: clienteNome,
         cliente_email: clienteEmail,
+        canal_venda: detectarCanalVenda(),
+        turno: obterTurnoAtualLocal(),
         itens: itens
       })
     });
@@ -465,6 +436,8 @@ async function finalizarPedido() {
     resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Erro ao gerar Pix</h3><p>${htmlSeguro(dadosPix?.error || dadosPix?.message || "A função criar-pix retornou erro.")}</p></div>`;
     return;
   }
+
+  const pedido = dadosPix?.pedido || null;
 
   const qrCodeBase64 =
     dadosPix?.qr_code_base64 ||
@@ -486,6 +459,14 @@ async function finalizarPedido() {
     dadosPix?.point_of_interaction?.transaction_data?.ticket_url ||
     dadosPix?.payment?.point_of_interaction?.transaction_data?.ticket_url;
 
+  const qrCodeUrl =
+    dadosPix?.pix_qr_url ||
+    dadosPix?.qr_code_url ||
+    dadosPix?.pix_ticket_url ||
+    ticketUrl;
+
+  const numeroPedidoExibicao = pedido?.numero_pedido || numero;
+
   if (!qrCodeBase64 && !qrCodeTexto && !ticketUrl) {
     resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Pix criado, mas QR Code não foi encontrado</h3><p>A função respondeu, mas não enviou QR Code ou copia e cola.</p></div>`;
     return;
@@ -493,13 +474,14 @@ async function finalizarPedido() {
 
   resultado.innerHTML = `
     <div class="resultado-pedido pix-box">
-      <h3>Pedido nº ${htmlSeguro(numero)}</h3>
+      <h3>Pedido nº ${htmlSeguro(numeroPedidoExibicao)}</h3>
       <p>Total: <strong>${formatarMoedaLocal(total)}</strong></p>
 
       <h3>Pagamento via Pix</h3>
       <p>Escaneie o QR Code abaixo para pagar:</p>
 
       ${qrCodeBase64 ? `<img class="pix-qrcode" src="data:image/png;base64,${qrCodeBase64}" alt="QR Code Pix">` : ""}
+      ${!qrCodeBase64 && qrCodeUrl ? `<img class="pix-qrcode" src="${htmlSeguro(qrCodeUrl)}" alt="QR Code Pix">` : ""}
 
       ${qrCodeTexto ? `
         <p><strong>Pix copia e cola:</strong></p>
