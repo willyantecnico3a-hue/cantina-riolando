@@ -1,9 +1,14 @@
 /* =========================================================
-   balcao.js corrigido
-   Sistema de Balcão - Totem Cantina Riolando
+   balcao.js
+   Sistema de Balcão - Cantina Riolando
 
-   Mostra automaticamente pedidos pagos pelo webhook:
-   status = "pago" aparece como "Pago - aguardando retirada".
+   Recursos:
+   - Mostra pedidos em aberto
+   - Atualização em tempo real
+   - Botão para arquivar pedido da fila
+   - Botão para arquivar todos os pedidos aguardando pagamento
+   - Pedido arquivado não aparece mais no balcão
+   - Pedido arquivado não é apagado do banco
 ========================================================= */
 
 let canalPedidosBalcao = null;
@@ -26,14 +31,31 @@ async function iniciarBalcao() {
     return;
   }
 
+  await cancelarPedidosExpirados();
   await carregarPedidos();
   ouvirPedidosTempoReal();
 }
 
 function obterBanco() {
-  if (typeof window !== "undefined" && window.db) return window.db;
-  if (typeof db !== "undefined") return db;
+  if (typeof window !== "undefined" && window.db) {
+    return window.db;
+  }
+
+  if (typeof db !== "undefined") {
+    return db;
+  }
+
   return null;
+}
+
+async function cancelarPedidosExpirados() {
+  try {
+    await fetch("/.netlify/functions/cancelar-pedidos-expirados", {
+      method: "POST"
+    });
+  } catch (erro) {
+    console.warn("Não foi possível chamar cancelar-pedidos-expirados:", erro);
+  }
 }
 
 async function carregarPedidos() {
@@ -53,11 +75,20 @@ async function carregarPedidos() {
     .from("pedidos")
     .select("*, itens_pedido(*)")
     .in("status", ["aguardando_pagamento", "pago", "em_preparo", "pronto"])
+    .or("arquivado.is.false,arquivado.is.null")
     .order("created_at", { ascending: true });
 
   if (error) {
     console.error("Erro ao carregar pedidos:", error);
-    area.innerHTML = `<p class="erro">Erro ao carregar pedidos: ${htmlSeguro(error.message)}</p>`;
+    area.innerHTML = `
+      <p class="erro">
+        Erro ao carregar pedidos: ${htmlSeguro(error.message)}
+      </p>
+      <p>
+        Se o erro mencionar a coluna <strong>arquivado</strong>, execute o SQL
+        <strong>sql_arquivar_pedidos.sql</strong> no Supabase.
+      </p>
+    `;
     return;
   }
 
@@ -70,14 +101,35 @@ function renderizarPedidos(pedidos) {
 
   area.innerHTML = "";
 
+  const painel = document.createElement("div");
+  painel.className = "painel-acoes-balcao";
+  painel.innerHTML = `
+    <div>
+      <strong>Fila do balcão</strong>
+      <p>Pedidos arquivados somem da fila, mas continuam salvos no banco.</p>
+    </div>
+
+    <div class="acoes-painel-balcao">
+      <button class="btn" onclick="carregarPedidos()">Atualizar fila</button>
+      <button class="btn alerta-secundario" onclick="arquivarPedidosAguardandoPagamento()">
+        Arquivar aguardando Pix
+      </button>
+    </div>
+  `;
+  area.appendChild(painel);
+
   if (!pedidos || pedidos.length === 0) {
-    area.innerHTML = "<p>Nenhum pedido aberto no momento.</p>";
+    const vazio = document.createElement("p");
+    vazio.className = "fila-vazia";
+    vazio.textContent = "Nenhum pedido aberto no momento.";
+    area.appendChild(vazio);
     return;
   }
 
   pedidos.forEach((pedido) => {
     const itens = montarListaItens(pedido);
     const statusTexto = formatarStatus(pedido.status);
+    const criadoEm = formatarDataHora(pedido.created_at);
 
     const div = document.createElement("div");
     div.className = `pedido status-${htmlSeguro(pedido.status)}`;
@@ -87,12 +139,16 @@ function renderizarPedidos(pedidos) {
 
       <p><strong>Cliente:</strong> ${htmlSeguro(pedido.cliente_nome)}</p>
       <p><strong>E-mail:</strong> ${htmlSeguro(pedido.cliente_email || "")}</p>
+      <p><strong>Horário:</strong> ${criadoEm}</p>
       <p><strong>Status:</strong> <span class="status">${statusTexto}</span></p>
       <p><strong>Total:</strong> ${formatarMoeda(pedido.total)}</p>
       <p><strong>Itens:</strong><br>${itens}</p>
 
       <div class="acoes-pedido">
         ${montarBotoesPedido(pedido)}
+        <button class="btn arquivar" onclick="arquivarPedido('${pedido.id}')">
+          Arquivar da fila
+        </button>
       </div>
     `;
 
@@ -118,7 +174,9 @@ function montarBotoesPedido(pedido) {
   const id = htmlSeguro(pedido.id);
 
   if (pedido.status === "aguardando_pagamento") {
-    return `<button class="btn" disabled>Aguardando Pix</button>`;
+    return `
+      <button class="btn" disabled>Aguardando Pix</button>
+    `;
   }
 
   if (pedido.status === "pago") {
@@ -156,7 +214,13 @@ async function alterarStatus(id, status) {
     return;
   }
 
-  const statusPermitidos = ["aguardando_pagamento", "pago", "em_preparo", "pronto", "entregue"];
+  const statusPermitidos = [
+    "aguardando_pagamento",
+    "pago",
+    "em_preparo",
+    "pronto",
+    "entregue"
+  ];
 
   if (!statusPermitidos.includes(status)) {
     alert("Status inválido.");
@@ -171,6 +235,71 @@ async function alterarStatus(id, status) {
   if (error) {
     console.error("Erro ao atualizar status:", error);
     alert("Erro ao atualizar pedido: " + error.message);
+    return;
+  }
+
+  await carregarPedidos();
+}
+
+async function arquivarPedido(id) {
+  const banco = obterBanco();
+
+  if (!banco) {
+    alert("Erro: Supabase não conectado.");
+    return;
+  }
+
+  const confirmar = confirm(
+    "Arquivar este pedido da fila?\n\n" +
+    "Ele não será apagado. Apenas deixará de aparecer no balcão."
+  );
+
+  if (!confirmar) return;
+
+  const { error } = await banco
+    .from("pedidos")
+    .update({
+      arquivado: true,
+      arquivado_em: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Erro ao arquivar pedido:", error);
+    alert("Erro ao arquivar pedido: " + error.message);
+    return;
+  }
+
+  await carregarPedidos();
+}
+
+async function arquivarPedidosAguardandoPagamento() {
+  const banco = obterBanco();
+
+  if (!banco) {
+    alert("Erro: Supabase não conectado.");
+    return;
+  }
+
+  const confirmar = confirm(
+    "Arquivar todos os pedidos que ainda estão aguardando Pix?\n\n" +
+    "Use esta opção para limpar pedidos abandonados da fila."
+  );
+
+  if (!confirmar) return;
+
+  const { error } = await banco
+    .from("pedidos")
+    .update({
+      arquivado: true,
+      arquivado_em: new Date().toISOString()
+    })
+    .eq("status", "aguardando_pagamento")
+    .or("arquivado.is.false,arquivado.is.null");
+
+  if (error) {
+    console.error("Erro ao arquivar pedidos:", error);
+    alert("Erro ao arquivar pedidos: " + error.message);
     return;
   }
 
@@ -280,13 +409,18 @@ async function entregarPedido(id) {
     .from("pedidos")
     .update({
       status: "entregue",
-      entregue_em: new Date().toISOString()
+      entregue_em: new Date().toISOString(),
+      arquivado: true,
+      arquivado_em: new Date().toISOString()
     })
     .eq("id", id);
 
   if (erroBaixarPedido) {
     console.error("Erro ao baixar pedido:", erroBaixarPedido);
-    alert("Estoque baixado, mas houve erro ao marcar pedido como entregue: " + erroBaixarPedido.message);
+    alert(
+      "Estoque baixado, mas houve erro ao marcar pedido como entregue: " +
+      erroBaixarPedido.message
+    );
     return;
   }
 
@@ -312,8 +446,16 @@ function ouvirPedidosTempoReal() {
 
   canalPedidosBalcao = banco
     .channel("pedidos-balcao")
-    .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, atualizarPedidosComDelay)
-    .on("postgres_changes", { event: "*", schema: "public", table: "itens_pedido" }, atualizarPedidosComDelay)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "pedidos" },
+      atualizarPedidosComDelay
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "itens_pedido" },
+      atualizarPedidosComDelay
+    )
     .subscribe((status) => {
       console.log("Realtime balcão:", status);
     });
@@ -321,7 +463,11 @@ function ouvirPedidosTempoReal() {
 
 function atualizarPedidosComDelay() {
   clearTimeout(timerAtualizacaoBalcao);
-  timerAtualizacaoBalcao = setTimeout(() => carregarPedidos(), 400);
+
+  timerAtualizacaoBalcao = setTimeout(() => {
+    cancelarPedidosExpirados();
+    carregarPedidos();
+  }, 400);
 }
 
 function formatarStatus(status) {
@@ -330,7 +476,8 @@ function formatarStatus(status) {
     pago: "Pago - aguardando retirada",
     em_preparo: "Em preparo",
     pronto: "Pronto para retirada",
-    entregue: "Entregue"
+    entregue: "Entregue",
+    expirado: "Expirado"
   };
 
   return nomes[status] || htmlSeguro(status);
@@ -344,6 +491,21 @@ function formatarMoeda(valor) {
   return Number(valor || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
+  });
+}
+
+function formatarDataHora(valor) {
+  if (!valor) return "Não informado";
+
+  const data = new Date(valor);
+
+  if (Number.isNaN(data.getTime())) {
+    return "Data inválida";
+  }
+
+  return data.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium"
   });
 }
 
@@ -369,3 +531,5 @@ function mostrarErroBalcao(mensagem) {
 window.carregarPedidos = carregarPedidos;
 window.alterarStatus = alterarStatus;
 window.entregarPedido = entregarPedido;
+window.arquivarPedido = arquivarPedido;
+window.arquivarPedidosAguardandoPagamento = arquivarPedidosAguardandoPagamento;

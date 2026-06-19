@@ -258,3 +258,71 @@ body {
   border: 1px solid #cbd5e1;
   word-break: break-all;
 }
+
+/* =========================================================
+   CSS para botão de arquivar pedidos no balcão
+   Cole no final do balcao.css ou style.css
+========================================================= */
+
+.painel-acoes-balcao {
+  grid-column: 1 / -1;
+  background: #f8fafc;
+  border: 1px solid #dce3ea;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.painel-acoes-balcao strong {
+  color: #0f4c81;
+  font-size: 20px;
+}
+
+.painel-acoes-balcao p {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+
+.acoes-painel-balcao {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn.arquivar {
+  background: #6b7280;
+  color: #ffffff;
+}
+
+.btn.alerta-secundario {
+  background: #ff6b00;
+  color: #ffffff;
+}
+
+.fila-vazia {
+  grid-column: 1 / -1;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 16px;
+  color: #4b5563;
+}
+
+@media (max-width: 700px) {
+  .painel-acoes-balcao {
+    align-items: stretch;
+  }
+
+  .acoes-painel-balcao {
+    width: 100%;
+  }
+
+  .acoes-painel-balcao .btn {
+    width: 100%;
+  }
+}
