@@ -544,6 +544,70 @@ function mostrarErroProdutos(mensagem) {
   }
 }
 
+/* =========================================================
+   AJUSTES PARA O app.js
+
+   Objetivos:
+   1) Pedido aguardando pagamento expira em 5 minutos.
+   2) Diferenciar compra no Totem e no Smartphone.
+========================================================= */
+
+
+/* 1. Adicione esta função no app.js */
+function detectarCanalVenda() {
+  const pagina = window.location.pathname.toLowerCase();
+
+  if (pagina.includes("app.html")) {
+    return "smartphone";
+  }
+
+  return "totem";
+}
+
+
+/* 2. Dentro da função finalizarPedido(), antes do insert do pedido,
+      crie a variável expiresAt: */
+const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+
+/* 3. No insert da tabela pedidos, troque ou ajuste estes campos: */
+const { data: pedido, error } = await banco
+  .from("pedidos")
+  .insert({
+    numero_pedido: numero,
+    cliente_nome: clienteNome,
+    cliente_email: clienteEmail,
+    total,
+    canal_venda: detectarCanalVenda(),
+    turno: obterTurnoAtualLocal(),
+    status: "aguardando_pagamento",
+    expires_at: expiresAt
+  })
+  .select()
+  .single();
+
+
+/* 4. No body enviado para /.netlify/functions/criar-pix,
+      inclua o expires_at: */
+body: JSON.stringify({
+  pedido_id: pedido.id,
+  numero_pedido: numero,
+  total,
+  valor: total,
+  expires_at: expiresAt,
+  description: `Pedido ${numero} - Cantina Riolando`,
+  descricao: `Pedido ${numero} - Cantina Riolando`,
+  cliente_nome: clienteNome,
+  cliente_email: clienteEmail,
+  itens
+})
+
+
+/* 5. No resultado do Pix, coloque um aviso visual:
+      <p>Este Pix expira em 5 minutos.</p>
+*/
+
+
 window.adicionarCarrinho = adicionarCarrinho;
 window.removerCarrinho = removerCarrinho;
 window.limparCarrinho = limparCarrinho;

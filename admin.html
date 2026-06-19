@@ -90,5 +90,44 @@ ARQUIVO: admin.html
   <script src="config.js"></script>
   <script src="supabaseClient.js"></script>
   <script src="admin.js"></script>
+
+
+  <!-- =========================================================
+     BLOCO HTML DO RELATÓRIO
+     Cole dentro do admin.html, no local onde você quer o relatório.
+     Antes do fechamento do </body>, carregue:
+     <script src="relatorio.js"></script>
+========================================================= -->
+
+<section class="card">
+  <h2>Relatório de vendas confirmadas</h2>
+  <p>
+    Este relatório soma somente pagamentos Pix confirmados.
+    Pedidos aguardando pagamento ou expirados não entram no total.
+  </p>
+
+  <div class="resumo-relatorio">
+    <div>
+      <strong>Total confirmado</strong>
+      <p id="totalConfirmado">R$ 0,00</p>
+    </div>
+
+    <div>
+      <strong>Vendas confirmadas</strong>
+      <p id="qtdVendasConfirmadas">0</p>
+    </div>
+
+    <div>
+      <strong>Última atualização</strong>
+      <p id="ultimaAtualizacaoRelatorio">--</p>
+    </div>
+  </div>
+
+  <h3>Detalhes das compras</h3>
+  <div id="relatorioConfirmados" class="lista-relatorio">
+    <p>Carregando relatório...</p>
+  </div>
+</section>
+
 </body>
 </html>

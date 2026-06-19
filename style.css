@@ -495,3 +495,69 @@ body {
     width: 100%;
   }
 }
+
+/* =========================================================
+   CSS para o relatório de vendas confirmadas
+   Pode colar no final do style.css
+========================================================= */
+
+.resumo-relatorio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.resumo-relatorio > div {
+  background: #f4f8fb;
+  border: 1px solid #dce3ea;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.resumo-relatorio strong {
+  color: #0f4c81;
+}
+
+.resumo-relatorio p {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 8px 0 0;
+}
+
+.lista-relatorio {
+  display: grid;
+  gap: 14px;
+}
+
+.pedido-relatorio {
+  background: #ffffff;
+  border: 1px solid #dce3ea;
+  border-left: 8px solid #00a651;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.pedido-relatorio h3 {
+  margin-top: 0;
+  color: #0f4c81;
+}
+
+.item-relatorio {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 6px 0;
+}
+
+.erro {
+  color: #d62828;
+  background: #fff0f0;
+  border: 1px solid #f5b5b5;
+  padding: 12px;
+  border-radius: 8px;
+}
+/* =========================================================
+   CSS para o Balcão de Pedidos
+   Pode colar no final do style.css
