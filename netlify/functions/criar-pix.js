@@ -43,7 +43,7 @@ exports.handler = async function (event) {
     const itens = Array.isArray(body.itens) ? body.itens : [];
     const canalVenda = normalizarCampo(body.canal_venda || "totem", 20);
     const turno = normalizarCampo(body.turno || "", 20) || null;
-    const expiresAt = body.expires_at || new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const numeroPedido = gerarNumeroPedido(body.numero_pedido);
 
     if (!Number.isFinite(total) || total <= 0) {
@@ -136,6 +136,25 @@ exports.handler = async function (event) {
 
     const payment = pagamento.payment;
     const transactionData = payment?.point_of_interaction?.transaction_data || {};
+
+    if (payment.status === "rejected" || (!transactionData.qr_code && !transactionData.ticket_url)) {
+      await atualizarPedido(pedidoCriado.pedido.id, {
+        mercado_pago_payment_id: payment?.id ? String(payment.id) : null,
+        status: "erro_pagamento",
+        status_pagamento: payment.status || "rejected",
+        mp_status_detail: payment.status_detail || "pix_sem_qr_code",
+        expires_at: expiresAt
+      });
+
+      return resposta(502, {
+        ok: false,
+        error: "Pagamento Pix rejeitado pelo Mercado Pago.",
+        status: payment.status || null,
+        status_detail: payment.status_detail || null,
+        detalhes: payment,
+        pedido: pedidoCriado.pedido
+      });
+    }
 
     await atualizarPedido(pedidoCriado.pedido.id, {
       mercado_pago_payment_id: String(payment.id),

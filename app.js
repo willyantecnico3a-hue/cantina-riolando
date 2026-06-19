@@ -433,7 +433,16 @@ async function finalizarPedido() {
 
   if (!respostaPix.ok) {
     console.error("Erro retornado por criar-pix:", dadosPix);
-    resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Erro ao gerar Pix</h3><p>${htmlSeguro(dadosPix?.error || dadosPix?.message || "A função criar-pix retornou erro.")}</p></div>`;
+    const detalheMercadoPago = dadosPix?.status_detail
+      ? `<p><strong>Detalhe Mercado Pago:</strong> ${htmlSeguro(dadosPix.status_detail)}</p>`
+      : "";
+    resultado.innerHTML = `
+      <div class="resultado-pedido erro">
+        <h3>Erro ao gerar Pix</h3>
+        <p>${htmlSeguro(dadosPix?.error || dadosPix?.message || "A funcao criar-pix retornou erro.")}</p>
+        ${detalheMercadoPago}
+      </div>
+    `;
     return;
   }
 
@@ -491,7 +500,7 @@ async function finalizarPedido() {
 
       ${ticketUrl ? `<p><a class="btn" href="${htmlSeguro(ticketUrl)}" target="_blank" rel="noopener noreferrer">Abrir pagamento</a></p>` : ""}
 
-      <p class="aviso-pix">Este Pix expira em 5 minutos. Após a confirmação, o pedido aparece no balcão.</p>
+      <p class="aviso-pix">Este Pix expira em 30 minutos. Após a confirmação, o pedido aparece no balcão.</p>
     </div>
   `;
 
