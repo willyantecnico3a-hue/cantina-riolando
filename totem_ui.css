@@ -1,0 +1,414 @@
+/* =========================================================
+   totem_ui.css
+   Visual moderno para Totem Cantina Riolando
+========================================================= */
+
+:root {
+  --azul-riolando: #0f4c81;
+  --azul-claro: #eaf3fb;
+  --verde: #00a651;
+  --vermelho: #d62828;
+  --cinza-bg: #f4f6f8;
+  --cinza-borda: #dce3ea;
+  --texto: #111827;
+  --sombra: 0 8px 24px rgba(15, 76, 129, 0.12);
+}
+
+body {
+  background: var(--cinza-bg);
+  color: var(--texto);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.layout {
+  align-items: start;
+}
+
+.topo-produtos-totem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.topo-produtos-totem h3 {
+  margin: 0;
+  font-size: 26px;
+  color: var(--azul-riolando);
+}
+
+.topo-produtos-totem p {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+
+.btn-atualizar {
+  border: none;
+  background: var(--azul-claro);
+  color: var(--azul-riolando);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.categorias-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 4px 18px;
+  margin-bottom: 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.categorias-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.categorias-scroll::-webkit-scrollbar-thumb {
+  background: #b8c7d6;
+  border-radius: 999px;
+}
+
+.categoria-chip {
+  min-width: 130px;
+  min-height: 58px;
+  border: 2px solid var(--cinza-borda);
+  background: #ffffff;
+  color: var(--azul-riolando);
+  border-radius: 18px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  scroll-snap-align: start;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+.categoria-chip small {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.categoria-chip.ativa {
+  background: var(--azul-riolando);
+  color: #ffffff;
+  border-color: var(--azul-riolando);
+  transform: translateY(-2px);
+}
+
+.categoria-chip.ativa small {
+  color: #e8f2ff;
+}
+
+.produtos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 18px;
+  padding-bottom: 20px;
+}
+
+.produto-card {
+  background: #ffffff;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--sombra);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 430px;
+}
+
+.produto-card:active {
+  transform: scale(0.985);
+}
+
+.produto-imagem-box {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.produto-imagem-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.selo-disponivel,
+.selo-esgotado {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.selo-disponivel {
+  background: #e8fff1;
+  color: #008a3d;
+}
+
+.selo-esgotado {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.produto-info {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.produto-categoria {
+  display: inline-flex;
+  width: fit-content;
+  background: var(--azul-claro);
+  color: var(--azul-riolando);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.produto-info h3 {
+  margin: 0;
+  font-size: 22px;
+  color: #061426;
+  line-height: 1.15;
+}
+
+.produto-descricao {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.35;
+  min-height: 38px;
+}
+
+.produto-rodape {
+  margin-top: auto;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preco {
+  font-size: 27px;
+  color: #008a3d;
+  font-weight: 1000;
+  margin: 0;
+}
+
+.estoque-info {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 4px 0 0;
+}
+
+.btn-produto {
+  border: none;
+  min-width: 112px;
+  min-height: 54px;
+  background: var(--verde);
+  color: #ffffff;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 1000;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(0,166,81,0.24);
+}
+
+.btn-produto:active {
+  transform: scale(0.97);
+}
+
+.btn-produto.esgotado,
+.btn-produto:disabled {
+  background: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.produto-esgotado {
+  background: #f3f4f6;
+  opacity: 0.72;
+  filter: grayscale(0.8);
+}
+
+.produto-esgotado .produto-imagem-box img {
+  opacity: 0.55;
+}
+
+.produto-esgotado .preco,
+.produto-esgotado h3 {
+  color: #6b7280;
+}
+
+.carrinho-vazio {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 14px;
+  color: #4b5563;
+}
+
+.item-carrinho {
+  background: #f8fafc;
+  border: 1px solid #dce3ea;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.item-carrinho strong {
+  font-size: 18px;
+}
+
+.item-carrinho p {
+  margin: 3px 0;
+}
+
+.controle-qtd {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controle-qtd button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: var(--azul-riolando);
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.controle-qtd span {
+  min-width: 34px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.btn-remover {
+  border: none;
+  background: #e5e7eb;
+  color: #111827;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pulse-carrinho {
+  animation: pulseCarrinho 0.35s ease;
+}
+
+@keyframes pulseCarrinho {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.018); box-shadow: 0 0 0 5px rgba(0,166,81,0.12); }
+  100% { transform: scale(1); }
+}
+
+.loading-produtos,
+.aviso-produtos,
+.erro-box {
+  background: #ffffff;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: var(--sombra);
+}
+
+.erro-box {
+  border-left: 8px solid var(--vermelho);
+}
+
+.resultado-pedido,
+.pix-box {
+  text-align: center;
+}
+
+.pix-qrcode {
+  width: 260px;
+  max-width: 100%;
+  display: block;
+  margin: 16px auto;
+}
+
+.pix-copia-cola {
+  width: 100%;
+  min-height: 90px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+button,
+a,
+input,
+textarea {
+  touch-action: manipulation;
+}
+
+@media (max-width: 900px) {
+  .produtos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+
+  .produto-card {
+    min-height: 390px;
+  }
+
+  .produto-imagem-box {
+    height: 140px;
+  }
+}
+
+@media (max-width: 680px) {
+  .categorias-scroll {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--cinza-bg);
+    padding-top: 10px;
+  }
+
+  .categoria-chip {
+    min-width: 112px;
+  }
+
+  .produtos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .produto-rodape {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .btn-produto {
+    width: 100%;
+  }
+}
