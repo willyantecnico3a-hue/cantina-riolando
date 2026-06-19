@@ -6,8 +6,11 @@
 let produtos = [];
 let carrinho = [];
 let categoriaAtual = "Todos";
+let buscaProdutos = "";
+let paginaProdutos = 1;
 
 const CATEGORIAS_PADRAO = ["Todos", "Bebidas", "Lanches", "Bolos", "Doces", "Salgados", "Combos", "Outros"];
+const PRODUTOS_POR_PAGINA = 10;
 
 document.addEventListener("DOMContentLoaded", async function () {
   prepararPwa();
@@ -142,9 +145,23 @@ function montarEstruturaProdutos() {
       <button class="btn-atualizar" onclick="carregarProdutos()">Atualizar</button>
     </div>
 
+    <label class="busca-produtos-label" for="buscaProdutos">Buscar produto</label>
+    <input
+      id="buscaProdutos"
+      class="busca-produtos"
+      type="search"
+      placeholder="Digite as primeiras letras. Ex: suc"
+      autocomplete="off"
+      oninput="buscarProdutosPorNome(this.value)"
+    />
+
     <div id="categoriasProdutos" class="categorias-scroll"></div>
+    <div id="ancoraCarrinhoApp"></div>
     <div id="listaProdutos" class="produtos-grid"></div>
+    <div id="paginacaoProdutos" class="paginacao-produtos"></div>
   `;
+
+  posicionarCarrinhoApp();
 }
 
 function obterCategorias() {
@@ -194,7 +211,14 @@ function renderizarCategorias() {
 
 function filtrarCategoria(categoria) {
   categoriaAtual = categoria;
+  paginaProdutos = 1;
   renderizarCategorias();
+  renderizarProdutos();
+}
+
+function buscarProdutosPorNome(valor) {
+  buscaProdutos = normalizarBusca(valor);
+  paginaProdutos = 1;
   renderizarProdutos();
 }
 
@@ -208,22 +232,22 @@ function renderizarProdutos() {
     if (!lista) return;
   }
 
-  let produtosFiltrados = produtos;
+  const produtosFiltrados = obterProdutosFiltrados();
+  const totalPaginas = Math.max(1, Math.ceil(produtosFiltrados.length / PRODUTOS_POR_PAGINA));
+  if (paginaProdutos > totalPaginas) paginaProdutos = totalPaginas;
 
-  if (categoriaAtual !== "Todos") {
-    produtosFiltrados = produtos.filter(function (produto) {
-      return normalizarCategoria(produto.categoria) === categoriaAtual;
-    });
-  }
+  const inicio = (paginaProdutos - 1) * PRODUTOS_POR_PAGINA;
+  const produtosPagina = produtosFiltrados.slice(inicio, inicio + PRODUTOS_POR_PAGINA);
 
   lista.innerHTML = "";
 
   if (produtosFiltrados.length === 0) {
-    lista.innerHTML = `<div class="aviso-produtos"><h3>Nenhum produto nesta categoria</h3><p>Escolha outra categoria acima.</p></div>`;
+    lista.innerHTML = `<div class="aviso-produtos"><h3>Nenhum produto encontrado</h3><p>Tente outra categoria ou limpe a busca.</p></div>`;
+    renderizarPaginacaoProdutos(0, 0, 0);
     return;
   }
 
-  produtosFiltrados.forEach(function (produto) {
+  produtosPagina.forEach(function (produto) {
     const estoque = Number(produto.estoque || 0);
     const semEstoque = estoque <= 0;
 
@@ -256,6 +280,71 @@ function renderizarProdutos() {
 
     lista.appendChild(div);
   });
+
+  renderizarPaginacaoProdutos(produtosFiltrados.length, inicio + 1, inicio + produtosPagina.length);
+}
+
+function obterProdutosFiltrados() {
+  return produtos.filter(function (produto) {
+    const categoriaOk = categoriaAtual === "Todos" || normalizarCategoria(produto.categoria) === categoriaAtual;
+    const nomeProduto = normalizarBusca(produto.nome || "");
+    const buscaOk = !buscaProdutos || nomeProduto.startsWith(buscaProdutos);
+    return categoriaOk && buscaOk;
+  });
+}
+
+function renderizarPaginacaoProdutos(totalProdutos, inicio, fim) {
+  const area = document.getElementById("paginacaoProdutos");
+  if (!area) return;
+
+  if (totalProdutos <= PRODUTOS_POR_PAGINA) {
+    area.innerHTML = totalProdutos > 0
+      ? `<span class="paginacao-info">Mostrando ${inicio} ate ${fim} de ${totalProdutos}</span>`
+      : "";
+    return;
+  }
+
+  const totalPaginas = Math.ceil(totalProdutos / PRODUTOS_POR_PAGINA);
+  const botoes = [];
+
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    const faixaInicio = (pagina - 1) * PRODUTOS_POR_PAGINA + 1;
+    const faixaFim = Math.min(pagina * PRODUTOS_POR_PAGINA, totalProdutos);
+    const ativo = pagina === paginaProdutos ? " ativa" : "";
+    botoes.push(
+      `<button class="pagina-produtos-btn${ativo}" onclick="irParaPaginaProdutos(${pagina})">${faixaInicio}-${faixaFim}</button>`
+    );
+  }
+
+  area.innerHTML = `
+    <span class="paginacao-info">Mostrando ${inicio} ate ${fim} de ${totalProdutos}</span>
+    <div class="paginacao-botoes">${botoes.join("")}</div>
+  `;
+}
+
+function irParaPaginaProdutos(pagina) {
+  paginaProdutos = Number(pagina) || 1;
+  renderizarProdutos();
+  document.getElementById("listaProdutos")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function normalizarBusca(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function posicionarCarrinhoApp() {
+  if (detectarCanalVenda() !== "app") return;
+
+  const carrinhoEl = document.querySelector(".app-carrinho");
+  const ancora = document.getElementById("ancoraCarrinhoApp");
+
+  if (carrinhoEl && ancora && carrinhoEl.parentElement !== ancora) {
+    ancora.appendChild(carrinhoEl);
+  }
 }
 
 function adicionarCarrinho(id) {
@@ -613,6 +702,8 @@ function mostrarErroProdutos(mensagem) {
 
 window.carregarProdutos = carregarProdutos;
 window.filtrarCategoria = filtrarCategoria;
+window.buscarProdutosPorNome = buscarProdutosPorNome;
+window.irParaPaginaProdutos = irParaPaginaProdutos;
 window.adicionarCarrinho = adicionarCarrinho;
 window.aumentarQuantidade = aumentarQuantidade;
 window.diminuirQuantidade = diminuirQuantidade;

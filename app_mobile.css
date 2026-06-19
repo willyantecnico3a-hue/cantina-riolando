@@ -53,6 +53,14 @@ body.modo-app {
   box-shadow: 0 2px 10px rgba(15, 76, 129, 0.08);
 }
 
+.modo-app .app-card-produtos {
+  padding-bottom: 16px;
+}
+
+.modo-app #ancoraCarrinhoApp {
+  margin: 0 0 14px;
+}
+
 .modo-app .topo-produtos-totem {
   align-items: flex-start;
 }
@@ -66,7 +74,8 @@ body.modo-app {
   top: 0;
   z-index: 4;
   background: #f5f7fa;
-  padding-top: 8px;
+  padding: 8px 0 12px;
+  margin-bottom: 10px;
 }
 
 .modo-app .categoria-chip {
@@ -104,7 +113,25 @@ body.modo-app {
 }
 
 .modo-app .app-carrinho {
-  margin-top: 12px;
+  margin: 0;
+  border: 2px solid #bde7cc;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 143, 90, 0.12);
+}
+
+.modo-app .app-carrinho h2 {
+  margin-bottom: 10px;
+}
+
+.modo-app .app-carrinho h3 {
+  background: #e9f8ef;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0 0;
+}
+
+.modo-app .busca-produtos {
+  margin-bottom: 8px;
 }
 
 .modo-app input,
