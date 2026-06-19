@@ -111,6 +111,8 @@ function limparCarrinho() {
   document.getElementById("resultadoPedido").innerHTML = "";
 }
 
+======================================================== */
+
 async function finalizarPedido() {
   const clienteNome = document.getElementById("clienteNome").value.trim();
   const clienteEmail = document.getElementById("clienteEmail").value.trim();
@@ -125,9 +127,18 @@ async function finalizarPedido() {
     return;
   }
 
+  const resultado = document.getElementById("resultadoPedido");
+  resultado.innerHTML = `
+    <div class="resultado-pedido">
+      <h3>Gerando Pix...</h3>
+      <p>Aguarde enquanto o QR Code é criado.</p>
+    </div>
+  `;
+
   const total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
   const numero = numeroPedido();
 
+  // 1. Cria pedido no Supabase
   const { data: pedido, error } = await db
     .from("pedidos")
     .insert({
@@ -143,10 +154,17 @@ async function finalizarPedido() {
     .single();
 
   if (error) {
-    alert("Erro ao criar pedido: " + error.message);
+    console.error("Erro ao criar pedido:", error);
+    resultado.innerHTML = `
+      <div class="resultado-pedido erro">
+        <h3>Erro ao criar pedido</h3>
+        <p>${error.message}</p>
+      </div>
+    `;
     return;
   }
 
+  // 2. Salva os itens do pedido
   const itens = carrinho.map(item => ({
     pedido_id: pedido.id,
     produto_id: item.id,
@@ -156,18 +174,27 @@ async function finalizarPedido() {
     subtotal: item.preco * item.quantidade
   }));
 
-  const { error: erroItens } = await db.from("itens_pedido").insert(itens);
+  const { error: erroItens } = await db
+    .from("itens_pedido")
+    .insert(itens);
 
   if (erroItens) {
-    alert("Erro ao salvar itens: " + erroItens.message);
+    console.error("Erro ao salvar itens:", erroItens);
+    resultado.innerHTML = `
+      <div class="resultado-pedido erro">
+        <h3>Erro ao salvar itens</h3>
+        <p>${erroItens.message}</p>
+      </div>
+    `;
     return;
   }
 
-  const config = await buscarConfig();
+  // 3. Chama a função serverless do Netlify para criar Pix no Mercado Pago
+  let respostaPix;
+  let dadosPix;
 
-  let pixDados = null;
   try {
-    const respostaPix = await fetch("/.netlify/functions/criar-pix", {
+    respostaPix = await fetch("/.netlify/functions/criar-pix", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -175,42 +202,139 @@ async function finalizarPedido() {
       body: JSON.stringify({
         pedido_id: pedido.id,
         numero_pedido: numero,
+        total: total,
         valor: total,
+        description: `Pedido ${numero} - Cantina Riolando`,
+        descricao: `Pedido ${numero} - Cantina Riolando`,
         cliente_nome: clienteNome,
         cliente_email: clienteEmail,
-        descricao: `Pedido ${numero} - Cantina Riolando`,
-        pix_nome: config?.pix_nome || "Cantina Riolando",
-        pix_cidade: config?.pix_cidade || "DIADEMA"
+        itens: itens
       })
     });
 
-    const dadosPix = await respostaPix.json();
-
-    if (respostaPix.ok) {
-      pixDados = dadosPix;
-    } else {
-      console.warn("Falha ao gerar Pix:", dadosPix);
-    }
-  } catch (error) {
-    console.warn("Erro ao chamar função de Pix:", error);
+    dadosPix = await respostaPix.json();
+  } catch (erroFetch) {
+    console.error("Erro ao chamar função criar-pix:", erroFetch);
+    resultado.innerHTML = `
+      <div class="resultado-pedido erro">
+        <h3>Erro ao gerar Pix</h3>
+        <p>Não foi possível chamar a função criar-pix.</p>
+        <p>Confira se o arquivo netlify/functions/criar-pix.js existe no projeto.</p>
+      </div>
+    `;
+    return;
   }
 
-  const qrBase64 = pixDados?.pix_qr_code_base64 || pixDados?.qr_code_base64 || "";
-  const qrTexto = pixDados?.pix_qr_code || pixDados?.qr_code || "";
-  const ticketUrl = pixDados?.pix_ticket_url || pixDados?.ticket_url || "";
+  if (!respostaPix.ok) {
+    console.error("Erro retornado pela função criar-pix:", dadosPix);
+    resultado.innerHTML = `
+      <div class="resultado-pedido erro">
+        <h3>Erro ao gerar Pix</h3>
+        <p>${dadosPix?.error || dadosPix?.message || "A função criar-pix retornou erro."}</p>
+        <p>Confira a variável MP_ACCESS_TOKEN no Netlify.</p>
+      </div>
+    `;
+    return;
+  }
 
-  document.getElementById("resultadoPedido").innerHTML = `
-    <h3>Pedido nº ${numero}</h3>
-    <p>Total: <strong>${moeda(total)}</strong></p>
-    <p>Faça o Pix para:</p>
-    <p><strong>${htmlSeguro(config?.pix_nome || "Cantina Riolando")}</strong></p>
-    <p>Chave Pix: <strong>${htmlSeguro(config?.pix_chave || "Configure no painel admin")}</strong></p>
-    ${qrBase64 ? `<div class="pix-qrcode"><img src="data:image/png;base64,${qrBase64}" alt="QRCode Pix do pedido ${numero}"></div>` : ""}
-    ${ticketUrl ? `<p><a href="${htmlSeguro(ticketUrl)}" target="_blank" rel="noopener noreferrer">Abrir comprovante Pix</a></p>` : ""}
-    ${qrTexto ? `<textarea class="pix-copia" readonly rows="4">${htmlSeguro(qrTexto)}</textarea>` : ""}
-    <p>Após confirmar o pagamento, o pedido aparecerá no balcão.</p>
+  console.log("Resposta do Pix:", dadosPix);
+
+  // 4. Aceita vários nomes de campos possíveis
+  const qrCodeBase64 =
+    dadosPix?.qr_code_base64 ||
+    dadosPix?.qrCodeBase64 ||
+    dadosPix?.qr_code_base64_img ||
+    dadosPix?.point_of_interaction?.transaction_data?.qr_code_base64 ||
+    dadosPix?.payment?.point_of_interaction?.transaction_data?.qr_code_base64;
+
+  const qrCodeTexto =
+    dadosPix?.qr_code ||
+    dadosPix?.qrCode ||
+    dadosPix?.copia_e_cola ||
+    dadosPix?.copiaECola ||
+    dadosPix?.point_of_interaction?.transaction_data?.qr_code ||
+    dadosPix?.payment?.point_of_interaction?.transaction_data?.qr_code;
+
+  const ticketUrl =
+    dadosPix?.ticket_url ||
+    dadosPix?.ticketUrl ||
+    dadosPix?.link_pagamento ||
+    dadosPix?.point_of_interaction?.transaction_data?.ticket_url ||
+    dadosPix?.payment?.point_of_interaction?.transaction_data?.ticket_url;
+
+  // 5. Se não vier QR Code, mostra mensagem clara
+  if (!qrCodeBase64 && !qrCodeTexto && !ticketUrl) {
+    resultado.innerHTML = `
+      <div class="resultado-pedido erro">
+        <h3>Pix criado, mas QR Code não foi encontrado</h3>
+        <p>A função criar-pix respondeu, mas não enviou qr_code_base64, qr_code ou ticket_url.</p>
+        <p>Abra o Console do navegador e veja a resposta em "Resposta do Pix".</p>
+      </div>
+    `;
+    return;
+  }
+
+  // 6. Renderiza QR Code no centro da tela
+  resultado.innerHTML = `
+    <div class="resultado-pedido pix-box">
+      <h3>Pedido nº ${numero}</h3>
+
+      <p>Total: <strong>${moeda(total)}</strong></p>
+
+      <h3>Pagamento via Pix</h3>
+      <p>Escaneie o QR Code abaixo para pagar:</p>
+
+      ${
+        qrCodeBase64
+          ? `<img class="pix-qrcode" src="data:image/png;base64,${qrCodeBase64}" alt="QR Code Pix">`
+          : ""
+      }
+
+      ${
+        qrCodeTexto
+          ? `
+            <p><strong>Pix copia e cola:</strong></p>
+            <textarea class="pix-copia-cola" readonly>${qrCodeTexto}</textarea>
+            <button class="btn principal" onclick="copiarPix()">Copiar código Pix</button>
+          `
+          : ""
+      }
+
+      ${
+        ticketUrl
+          ? `<p><a class="btn" href="${ticketUrl}" target="_blank" rel="noopener noreferrer">Abrir pagamento</a></p>`
+          : ""
+      }
+
+      <p class="aviso-pix">
+        Após o pagamento ser confirmado, o pedido aparecerá no balcão.
+      </p>
+    </div>
   `;
 
+  // 7. Limpa apenas o carrinho, sem apagar o resultado do Pix
   carrinho = [];
   renderizarCarrinho();
 }
+
+function copiarPix() {
+  const campo = document.querySelector(".pix-copia-cola");
+
+  if (!campo) {
+    alert("Código Pix não encontrado.");
+    return;
+  }
+
+  campo.select();
+  campo.setSelectionRange(0, 99999);
+
+  navigator.clipboard.writeText(campo.value)
+    .then(() => alert("Código Pix copiado!"))
+    .catch(() => {
+      document.execCommand("copy");
+      alert("Código Pix copiado!");
+    });
+}
+
+window.finalizarPedido = finalizarPedido;
+window.copiarPix = copiarPix;
