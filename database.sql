@@ -190,3 +190,79 @@ from pedidos p
 left join itens_pedido i on i.pedido_id = p.id
 where p.status_pagamento = 'approved'
 group by p.id;
+
+-- =========================================================
+-- ACESSO ADMINISTRATIVO (Supabase Auth)
+-- 1. Crie o usuário administrador em Authentication > Users.
+-- 2. Copie o UUID criado e execute:
+--    insert into public.admin_users (user_id) values ('UUID-DO-USUARIO');
+-- As políticas abaixo mantêm totem.html e app.html públicos e protegem
+-- balcão, produtos administrativos, pedidos e relatórios.
+-- =========================================================
+
+create table if not exists public.admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.admin_users enable row level security;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.admin_users where user_id = auth.uid()
+  );
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
+-- Função mínima usada pela tela pública, sem expor dados do Pix.
+create or replace function public.obter_status_totem()
+returns table (totem_pausado boolean)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(c.totem_pausado, false)
+  from public.configuracoes c
+  order by c.created_at asc
+  limit 1;
+$$;
+
+revoke all on function public.obter_status_totem() from public;
+grant execute on function public.obter_status_totem() to anon, authenticated;
+
+-- Remove as permissões abertas do protótipo.
+drop policy if exists "produtos_insert_publico_prototipo" on produtos;
+drop policy if exists "produtos_update_publico_prototipo" on produtos;
+drop policy if exists "pedidos_select_publico" on pedidos;
+drop policy if exists "pedidos_insert_publico" on pedidos;
+drop policy if exists "pedidos_update_publico_prototipo" on pedidos;
+drop policy if exists "itens_select_publico" on itens_pedido;
+drop policy if exists "itens_insert_publico" on itens_pedido;
+drop policy if exists "config_select_publico" on configuracoes;
+drop policy if exists "config_update_publico_prototipo" on configuracoes;
+drop policy if exists "config_insert_publico_prototipo" on configuracoes;
+
+drop policy if exists "produtos_gerenciar_admin" on produtos;
+create policy "produtos_gerenciar_admin" on produtos for all
+using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "pedidos_gerenciar_admin" on pedidos;
+create policy "pedidos_gerenciar_admin" on pedidos for all
+using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "itens_gerenciar_admin" on itens_pedido;
+create policy "itens_gerenciar_admin" on itens_pedido for all
+using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "configuracoes_gerenciar_admin" on configuracoes;
+create policy "configuracoes_gerenciar_admin" on configuracoes for all
+using (public.is_admin()) with check (public.is_admin());

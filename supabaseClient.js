@@ -19,6 +19,7 @@ function numeroPedido() {
 }
 
 async function buscarConfig() {
-  const { data } = await db.from("configuracoes").select("*").limit(1).single();
-  return data;
+  const { data, error } = await db.rpc("obter_status_totem");
+  if (error) return null;
+  return Array.isArray(data) ? data[0] : data;
 }

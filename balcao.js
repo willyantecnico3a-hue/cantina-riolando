@@ -17,6 +17,7 @@ let timerAtualizacaoBalcao = null;
 document.addEventListener("DOMContentLoaded", iniciarBalcao);
 
 async function iniciarBalcao() {
+  if (!(await window.exigirAdministrador())) return;
   const banco = obterBanco();
 
   if (!banco) {

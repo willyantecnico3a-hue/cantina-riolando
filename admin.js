@@ -1,6 +1,7 @@
 let produtoEmEdicaoId = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!(await window.exigirAdministrador())) return;
   mostrarAbaAdmin("produtos");
   await carregarConfiguracao();
   await carregarProdutosAdmin();
