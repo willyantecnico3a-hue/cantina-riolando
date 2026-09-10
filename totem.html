@@ -13,18 +13,23 @@
   <header class="topo topo-totem">
     <div>
       <h1>Cantina Riolando</h1>
-      <p>Totem de autoatendimento escolar</p>
+      <p>Monte seu pedido e pague pelo Pix</p>
+    </div>
+    <div class="totem-etapa" aria-label="Etapa atual do pedido">
+      <span>1</span> Escolha seus produtos
     </div>
   </header>
 
   <main class="layout layout-totem">
-    <section class="card grande painel-produtos-totem">
-      <h2>Escolha seus produtos</h2>
+    <section class="card grande painel-produtos-totem" aria-label="Cardápio">
       <div id="produtos" class="grid-produtos"></div>
     </section>
 
     <aside class="card carrinho carrinho-totem">
-      <h2>Meu pedido</h2>
+      <div class="cabecalho-carrinho-totem">
+        <h2>Seu pedido</h2>
+        <span id="contadorCarrinhoTotem">0 itens</span>
+      </div>
 
       <label>Nome do cliente</label>
       <input id="clienteNome" placeholder="Ex: Joao Silva" />

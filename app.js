@@ -11,7 +11,8 @@ let paginaProdutos = 1;
 let monitorPagamentoTotem = null;
 
 const CATEGORIAS_PADRAO = ["Todos", "Bebidas", "Lanches", "Bolos", "Doces", "Salgados", "Combos", "Outros"];
-const PRODUTOS_POR_PAGINA = 10;
+// No totem, mostrar um catálogo maior evita áreas vazias em telas amplas.
+const PRODUTOS_POR_PAGINA = window.location.pathname.toLowerCase().includes("totem") ? 24 : 10;
 
 document.addEventListener("DOMContentLoaded", async function () {
   prepararPwa();
@@ -454,7 +455,19 @@ function renderizarCarrinho() {
   }, 0);
 
   totalEl.textContent = formatarMoedaLocal(total);
+  atualizarContadorCarrinhoTotem();
   atualizarResumoCarrinhoApp(total);
+}
+
+function atualizarContadorCarrinhoTotem() {
+  const contador = document.getElementById("contadorCarrinhoTotem");
+  if (!contador) return;
+
+  const quantidade = carrinho.reduce(function (soma, item) {
+    return soma + Number(item.quantidade || 0);
+  }, 0);
+
+  contador.textContent = quantidade === 1 ? "1 item" : `${quantidade} itens`;
 }
 
 function atualizarResumoCarrinhoApp(total) {
