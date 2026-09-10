@@ -15,8 +15,25 @@ const PRODUTOS_POR_PAGINA = 10;
 
 document.addEventListener("DOMContentLoaded", async function () {
   prepararPwa();
+  await preencherClienteAutenticado();
   await iniciarTotem();
 });
+
+async function preencherClienteAutenticado() {
+  const banco = obterBanco();
+  if (!banco) return;
+
+  const { data } = await banco.auth.getUser();
+  const usuario = data?.user;
+  if (!usuario) return;
+
+  const campoEmail = document.getElementById("clienteEmail");
+  const campoNome = document.getElementById("clienteNome");
+  const nome = usuario.user_metadata?.full_name || usuario.user_metadata?.name || "";
+
+  if (campoEmail && usuario.email) campoEmail.value = usuario.email;
+  if (campoNome && nome) campoNome.value = nome;
+}
 
 async function iniciarTotem() {
   const banco = obterBanco();

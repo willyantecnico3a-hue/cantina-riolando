@@ -11,6 +11,16 @@ body.modo-app {
   font-size: 22px;
 }
 
+.app-link-pedidos {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, .38);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .topo-app nav a {
   border-radius: 8px;
   padding: 9px 12px;
