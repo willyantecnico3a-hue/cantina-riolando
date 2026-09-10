@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#008f5a" />
+  <title>Meus pedidos | Cantina Riolando</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="conta_mobile.css" />
+</head>
+<body class="pagina-conta">
+  <header class="conta-topo">
+    <a href="app.html" class="conta-voltar" aria-label="Voltar ao cardápio">‹</a>
+    <strong>Cantina Riolando</strong>
+    <span aria-hidden="true"></span>
+  </header>
+
+  <main class="conta-shell">
+    <section id="areaAutenticacao" class="conta-boas-vindas">
+      <div class="conta-icone">◉</div>
+      <p class="conta-etiqueta">MINHA CONTA</p>
+      <h1>Acompanhe seus pedidos</h1>
+      <p>Entre com sua conta Google para consultar os pedidos feitos no aplicativo e no totem.</p>
+      <button id="botaoGoogle" class="botao-google" type="button">
+        <span>G</span> Continuar com Google
+      </button>
+      <p id="mensagemConta" class="conta-mensagem" role="alert" hidden></p>
+    </section>
+
+    <section id="areaPedidos" hidden>
+      <div class="conta-perfil">
+        <div class="conta-avatar" id="avatarUsuario">C</div>
+        <div>
+          <p>Olá, <strong id="nomeUsuario">Cliente</strong></p>
+          <span id="emailUsuario"></span>
+        </div>
+        <button id="botaoSair" class="conta-sair" type="button">Sair</button>
+      </div>
+
+      <div class="conta-titulo-pedidos">
+        <div>
+          <p class="conta-etiqueta">SEUS PEDIDOS</p>
+          <h1>Últimos pedidos</h1>
+        </div>
+        <button id="botaoAtualizarPedidos" class="conta-atualizar" type="button" aria-label="Atualizar pedidos">↻</button>
+      </div>
+
+      <div id="listaMeusPedidos" class="lista-meus-pedidos" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <nav class="conta-navegacao" aria-label="Navegação principal">
+    <a href="app.html"><span>⌂</span> Cardápio</a>
+    <a class="ativa" href="minha-conta.html"><span>◷</span> Pedidos</a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="minha-conta.js"></script>
+</body>
+</html>

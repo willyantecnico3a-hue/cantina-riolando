@@ -502,3 +502,181 @@ textarea {
     width: 100%;
   }
 }
+
+/* Etapa de pagamento em tela cheia, inspirada em totens de autoatendimento. */
+.pagamento-totem {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: linear-gradient(135deg, #06365f, #0f4c81 58%, #0d6a9f);
+  color: #ffffff;
+}
+
+.pagamento-totem-painel {
+  width: min(650px, 100%);
+  min-height: min(760px, calc(100vh - 56px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 42px;
+  border-radius: 28px;
+  background: #ffffff;
+  color: #102235;
+  text-align: center;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .28);
+}
+
+.pagamento-totem-progresso {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  color: #4b647b;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.pagamento-totem-progresso span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #00a651;
+  color: #ffffff;
+}
+
+.pagamento-totem-pedido {
+  margin: 24px 0 8px;
+  color: #0f4c81;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.pagamento-totem h2 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 44px);
+  color: #102235;
+  letter-spacing: -.04em;
+}
+
+.pagamento-totem-total {
+  margin: 12px 0 20px;
+  color: #52677a;
+  font-size: 20px;
+}
+
+.pagamento-totem-total strong {
+  margin-left: 8px;
+  color: #008a3d;
+  font-size: 28px;
+}
+
+.pagamento-totem-qr-box {
+  display: grid;
+  place-items: center;
+  width: 276px;
+  height: 276px;
+  padding: 12px;
+  border: 1px solid #dce5ec;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 76, 129, .10);
+}
+
+.pagamento-totem-qr {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pagamento-totem-copiar,
+.pagamento-totem-voltar,
+.pagamento-totem-novo {
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 20px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pagamento-totem-copiar {
+  margin-top: 14px;
+  background: #eaf3fb;
+  color: #0f4c81;
+}
+
+.pagamento-totem-aguardando {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: auto;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff8e8;
+  color: #6a4b00;
+  text-align: left;
+}
+
+.pagamento-totem-aguardando i {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 4px solid #f5c149;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: girarPagamento 1s linear infinite;
+}
+
+.pagamento-totem-aguardando strong,
+.pagamento-totem-aguardando span { display: block; }
+.pagamento-totem-aguardando span { margin-top: 3px; font-size: 14px; line-height: 1.35; }
+
+.pagamento-totem-voltar {
+  margin-top: 16px;
+  background: transparent;
+  color: #527086;
+}
+
+.pagamento-totem.confirmado { background: linear-gradient(135deg, #006c31, #00a651); }
+.pagamento-totem.confirmado .pagamento-totem-painel { justify-content: center; }
+
+.pagamento-totem-sucesso-icone {
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #e8fff1;
+  color: #009344;
+  font-size: 66px;
+  font-weight: 900;
+}
+
+.pagamento-totem-sucesso-texto {
+  max-width: 420px;
+  margin: 18px 0 30px;
+  color: #52677a;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.pagamento-totem-novo { background: #00a651; color: #ffffff; min-width: 260px; }
+
+@keyframes girarPagamento { to { transform: rotate(360deg); } }
+
+@media (max-width: 680px) {
+  .pagamento-totem { padding: 14px; }
+  .pagamento-totem-painel { min-height: calc(100vh - 28px); padding: 28px 20px; border-radius: 22px; }
+  .pagamento-totem-qr-box { width: min(260px, 78vw); height: min(260px, 78vw); }
+}

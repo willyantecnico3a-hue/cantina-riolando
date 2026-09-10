@@ -259,9 +259,25 @@ drop policy if exists "pedidos_gerenciar_admin" on pedidos;
 create policy "pedidos_gerenciar_admin" on pedidos for all
 using (public.is_admin()) with check (public.is_admin());
 
+-- Área do cliente: cada pessoa autenticada pelo Google só pode consultar
+-- pedidos registrados com o mesmo e-mail da sua conta.
+drop policy if exists "pedidos_cliente_ler_proprios" on pedidos;
+create policy "pedidos_cliente_ler_proprios" on pedidos for select to authenticated
+using (lower(cliente_email) = lower(coalesce(auth.jwt() ->> 'email', '')));
+
 drop policy if exists "itens_gerenciar_admin" on itens_pedido;
 create policy "itens_gerenciar_admin" on itens_pedido for all
 using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "itens_cliente_ler_proprios" on itens_pedido;
+create policy "itens_cliente_ler_proprios" on itens_pedido for select to authenticated
+using (
+  exists (
+    select 1 from public.pedidos p
+    where p.id = itens_pedido.pedido_id
+      and lower(p.cliente_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  )
+);
 
 drop policy if exists "configuracoes_gerenciar_admin" on configuracoes;
 create policy "configuracoes_gerenciar_admin" on configuracoes for all
