@@ -8,6 +8,7 @@ let carrinho = [];
 let categoriaAtual = "Todos";
 let buscaProdutos = "";
 let paginaProdutos = 1;
+let monitorPagamentoTotem = null;
 
 const CATEGORIAS_PADRAO = ["Todos", "Bebidas", "Lanches", "Bolos", "Doces", "Salgados", "Combos", "Outros"];
 const PRODUTOS_POR_PAGINA = 10;
@@ -508,7 +509,7 @@ async function finalizarPedido() {
   }, 0);
 
   const numero = gerarNumeroPedidoLocal();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
   const itens = carrinho.map(function (item) {
     return {
@@ -624,6 +625,105 @@ async function finalizarPedido() {
 
   carrinho = [];
   renderizarCarrinho();
+
+  if (detectarCanalVenda() === "totem") {
+    mostrarPagamentoTotem({
+      pedidoId: pedido?.id,
+      numeroPedido: numeroPedidoExibicao,
+      total,
+      qrCodeBase64,
+      qrCodeUrl,
+      qrCodeTexto
+    });
+  }
+}
+
+function mostrarPagamentoTotem({ pedidoId, numeroPedido, total, qrCodeBase64, qrCodeUrl, qrCodeTexto }) {
+  document.getElementById("pagamentoTotem")?.remove();
+  if (monitorPagamentoTotem) window.clearInterval(monitorPagamentoTotem);
+
+  const qrCode = qrCodeBase64
+    ? `<img class="pagamento-totem-qr" src="data:image/png;base64,${qrCodeBase64}" alt="QR Code Pix para pagamento">`
+    : qrCodeUrl
+      ? `<img class="pagamento-totem-qr" src="${htmlSeguro(qrCodeUrl)}" alt="QR Code Pix para pagamento">`
+      : "";
+
+  const copiaECola = qrCodeTexto
+    ? `<button class="pagamento-totem-copiar" type="button" onclick="copiarPix()">Copiar código Pix</button>`
+    : "";
+
+  const tela = document.createElement("section");
+  tela.id = "pagamentoTotem";
+  tela.className = "pagamento-totem";
+  tela.setAttribute("role", "dialog");
+  tela.setAttribute("aria-modal", "true");
+  tela.innerHTML = `
+    <div class="pagamento-totem-painel">
+      <div class="pagamento-totem-progresso"><span>2</span> Pagamento</div>
+      <p class="pagamento-totem-pedido">PEDIDO Nº ${htmlSeguro(numeroPedido)}</p>
+      <h2>Escaneie para pagar</h2>
+      <p class="pagamento-totem-total">Total <strong>${formatarMoedaLocal(total)}</strong></p>
+      <div class="pagamento-totem-qr-box">${qrCode}</div>
+      ${copiaECola}
+      <div class="pagamento-totem-aguardando">
+        <i aria-hidden="true"></i>
+        <div><strong>Aguardando pagamento</strong><span>Assim que o Pix for confirmado, seu pedido será enviado para preparo.</span></div>
+      </div>
+      <button class="pagamento-totem-voltar" type="button" onclick="fecharPagamentoTotem()">Voltar ao cardápio</button>
+    </div>
+  `;
+  document.body.appendChild(tela);
+
+  if (pedidoId) {
+    consultarPagamentoTotem(pedidoId);
+    monitorPagamentoTotem = window.setInterval(function () {
+      consultarPagamentoTotem(pedidoId);
+    }, 3000);
+  }
+}
+
+async function consultarPagamentoTotem(pedidoId) {
+  const banco = obterBanco();
+  if (!banco || !pedidoId) return;
+
+  const { data, error } = await banco
+    .from("pedidos")
+    .select("numero_pedido, status, status_pagamento")
+    .eq("id", pedidoId)
+    .maybeSingle();
+
+  if (error || !data) return;
+
+  if (data.status === "pago" || data.status_pagamento === "approved") {
+    confirmarPagamentoTotem(data.numero_pedido);
+  }
+}
+
+function confirmarPagamentoTotem(numeroPedido) {
+  if (monitorPagamentoTotem) {
+    window.clearInterval(monitorPagamentoTotem);
+    monitorPagamentoTotem = null;
+  }
+
+  const tela = document.getElementById("pagamentoTotem");
+  if (!tela || tela.classList.contains("confirmado")) return;
+
+  tela.classList.add("confirmado");
+  tela.querySelector(".pagamento-totem-painel").innerHTML = `
+    <div class="pagamento-totem-sucesso-icone" aria-hidden="true">✓</div>
+    <p class="pagamento-totem-pedido">PEDIDO Nº ${htmlSeguro(numeroPedido || "")}</p>
+    <h2>Pagamento efetuado!</h2>
+    <p class="pagamento-totem-sucesso-texto">Seu pedido foi enviado para a cantina. Aguarde o chamado no balcão.</p>
+    <button class="pagamento-totem-novo" type="button" onclick="fecharPagamentoTotem()">Fazer novo pedido</button>
+  `;
+}
+
+function fecharPagamentoTotem() {
+  if (monitorPagamentoTotem) {
+    window.clearInterval(monitorPagamentoTotem);
+    monitorPagamentoTotem = null;
+  }
+  document.getElementById("pagamentoTotem")?.remove();
 }
 
 function copiarPix() {

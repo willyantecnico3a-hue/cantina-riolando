@@ -93,7 +93,32 @@ async function carregarPedidos() {
     return;
   }
 
-  renderizarPedidos(data || []);
+  const pedidos = data || [];
+  await sincronizarPedidosComPixAprovado(banco, pedidos);
+  renderizarPedidos(pedidos);
+}
+
+// Recupera pedidos aprovados pelo gateway caso uma notificação tenha atualizado
+// somente o status do pagamento. Assim o estado operacional não fica preso em
+// "Aguardando pagamento" no balcão.
+async function sincronizarPedidosComPixAprovado(banco, pedidos) {
+  const pendentesDeSincronizacao = pedidos.filter((pedido) =>
+    pedido.status_pagamento === "approved" && pedido.status === "aguardando_pagamento"
+  );
+
+  await Promise.all(pendentesDeSincronizacao.map(async (pedido) => {
+    const { error } = await banco
+      .from("pedidos")
+      .update({ status: "pago" })
+      .eq("id", pedido.id);
+
+    if (error) {
+      console.error("Erro ao sincronizar pagamento aprovado:", error);
+      return;
+    }
+
+    pedido.status = "pago";
+  }));
 }
 
 function renderizarPedidos(pedidos) {
@@ -129,12 +154,13 @@ function renderizarPedidos(pedidos) {
 
   pedidos.forEach((pedido) => {
     const itens = montarListaItens(pedido);
-    const statusTexto = formatarStatus(pedido.status);
+    const statusEfetivo = obterStatusEfetivo(pedido);
+    const statusTexto = formatarStatus(statusEfetivo);
     const pagamentoTexto = formatarStatusPagamento(pedido);
     const criadoEm = formatarDataHora(pedido.created_at);
 
     const div = document.createElement("div");
-    div.className = `pedido status-${htmlSeguro(pedido.status)}`;
+    div.className = `pedido status-${htmlSeguro(statusEfetivo)}`;
 
     div.innerHTML = `
       <h2>Pedido nº ${htmlSeguro(pedido.numero_pedido)}</h2>
@@ -148,7 +174,7 @@ function renderizarPedidos(pedidos) {
       <p><strong>Itens:</strong><br>${itens}</p>
 
       <div class="acoes-pedido">
-        ${montarBotoesPedido(pedido)}
+        ${montarBotoesPedido(pedido, statusEfetivo)}
         <button class="btn arquivar" onclick="arquivarPedido('${pedido.id}')">
           Arquivar da fila
         </button>
@@ -173,16 +199,17 @@ function montarListaItens(pedido) {
     .join("<br>");
 }
 
-function montarBotoesPedido(pedido) {
+function montarBotoesPedido(pedido, statusEfetivo) {
   const id = htmlSeguro(pedido.id);
+  const status = statusEfetivo || obterStatusEfetivo(pedido);
 
-  if (pedido.status === "aguardando_pagamento") {
+  if (status === "aguardando_pagamento") {
     return `
       <button class="btn" disabled>Aguardando Pix</button>
     `;
   }
 
-  if (pedido.status === "pago") {
+  if (status === "pago") {
     return `
       <button class="btn principal" onclick="alterarStatus('${id}', 'em_preparo')">
         Iniciar preparo
@@ -190,7 +217,7 @@ function montarBotoesPedido(pedido) {
     `;
   }
 
-  if (pedido.status === "em_preparo") {
+  if (status === "em_preparo") {
     return `
       <button class="btn principal" onclick="alterarStatus('${id}', 'pronto')">
         Marcar como pronto
@@ -198,7 +225,7 @@ function montarBotoesPedido(pedido) {
     `;
   }
 
-  if (pedido.status === "pronto") {
+  if (status === "pronto") {
     return `
       <button class="btn alerta" onclick="entregarPedido('${id}')">
         Entregue / Baixar estoque
@@ -484,6 +511,14 @@ function formatarStatus(status) {
   };
 
   return nomes[status] || htmlSeguro(status);
+}
+
+// A aprovação do Pix é a fonte de verdade para liberar o pedido. Isso também
+// protege a tela caso uma notificação do Mercado Pago atualize primeiro
+// `status_pagamento` e o campo operacional `status` chegue logo depois.
+function obterStatusEfetivo(pedido) {
+  if (pedido?.status_pagamento === "approved") return "pago";
+  return pedido?.status || "aguardando_pagamento";
 }
 
 function formatarStatusPagamento(pedido) {
