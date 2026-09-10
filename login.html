@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acesso administrativo | Cantina Riolando</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="pagina-login">
+  <main class="login-shell">
+    <section class="login-card" aria-labelledby="titulo-login">
+      <p class="login-marca">Cantina Riolando</p>
+      <h1 id="titulo-login">Acesso administrativo</h1>
+      <p class="login-texto">Entre com a conta autorizada para acessar o balcão e o painel administrativo.</p>
+      <form id="formLogin" class="login-form">
+        <label for="emailLogin">E-mail</label>
+        <input id="emailLogin" type="email" autocomplete="email" required placeholder="nome@escola.sp.gov.br" />
+        <label for="senhaLogin">Senha</label>
+        <input id="senhaLogin" type="password" autocomplete="current-password" required placeholder="Sua senha" />
+        <p id="mensagemLogin" class="login-mensagem" role="alert" hidden></p>
+        <button id="botaoLogin" class="btn principal" type="submit">Entrar</button>
+      </form>
+      <a class="login-voltar" href="index.html">Voltar para escolha de acesso</a>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>

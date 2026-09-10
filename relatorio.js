@@ -9,6 +9,7 @@
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!(await window.exigirAdministrador())) return;
   await carregarRelatorioConfirmado();
   ouvirRelatorioTempoReal();
 });
