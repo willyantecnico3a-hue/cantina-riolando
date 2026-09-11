@@ -11,11 +11,20 @@ document.addEventListener("DOMContentLoaded", async function () {
     console.error("Erro ao recuperar sessão do cliente:", error);
     return;
   }
-  if (data?.user) mostrarConta(data.user);
+  if (data?.user && !(await usuarioAdministrador(data.user))) mostrarConta(data.user);
 
   db.auth.onAuthStateChange(function (_event, session) {
     if (session?.user) {
-      mostrarConta(session.user);
+      usuarioAdministrador(session.user).then(function (ehAdmin) {
+        if (ehAdmin) {
+          usuarioConta = null;
+          pararAtualizacaoPedidos();
+          document.getElementById("areaPedidos").hidden = true;
+          document.getElementById("areaAutenticacao").hidden = false;
+          return;
+        }
+        mostrarConta(session.user);
+      });
     } else if (usuarioConta) {
       usuarioConta = null;
       pararAtualizacaoPedidos();
@@ -32,6 +41,7 @@ async function entrarComGoogle() {
   botao.textContent = "Abrindo Google...";
   mensagem.hidden = true;
 
+  await db.auth.signOut();
   const { error } = await db.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: `${window.location.origin}${window.location.pathname}` }
@@ -43,6 +53,12 @@ async function entrarComGoogle() {
     botao.disabled = false;
     botao.innerHTML = "<span>G</span> Continuar com Google";
   }
+}
+
+async function usuarioAdministrador(usuario) {
+  if (!usuario) return false;
+  const { data, error } = await db.rpc("is_admin");
+  return !error && data === true;
 }
 
 function mostrarConta(usuario) {

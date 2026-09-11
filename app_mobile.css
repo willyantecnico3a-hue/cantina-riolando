@@ -135,6 +135,60 @@ body.modo-app {
   margin-bottom: 10px;
 }
 
+.acesso-cliente {
+  margin: 0 0 15px;
+  padding: 13px;
+  border: 1px solid #dce5eb;
+  border-radius: 13px;
+  background: #f7fafc;
+}
+
+.acesso-cliente strong {
+  color: var(--app-ink);
+  font-size: 14px;
+}
+
+.acesso-cliente p {
+  margin: 5px 0 10px;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.botao-google-cliente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #d5dfe7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.botao-google-cliente span {
+  color: #4285f4;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.acesso-cliente.cliente-conectado {
+  border-color: #bde7cc;
+  background: #e9f8ef;
+}
+
+.acesso-cliente.cliente-conectado strong::after {
+  margin-left: 6px;
+  color: var(--app-verde);
+  content: "✓";
+}
+
 .modo-app .app-carrinho h3 {
   background: #e9f8ef;
   border-radius: 10px;

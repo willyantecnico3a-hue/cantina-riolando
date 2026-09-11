@@ -44,11 +44,19 @@
     <aside class="card carrinho app-carrinho">
       <h2>Meu pedido</h2>
 
+      <div id="acessoCliente" class="acesso-cliente">
+        <strong>Conta do cliente</strong>
+        <p id="mensagemAcessoCliente">Entre com sua conta Google para fazer o pedido.</p>
+        <button id="botaoGoogleCliente" class="botao-google-cliente" type="button" onclick="entrarClienteComGoogle()">
+          <span>G</span> Entrar com Google
+        </button>
+      </div>
+
       <label>Nome do aluno</label>
       <input id="clienteNome" autocomplete="name" placeholder="Ex: Joao Silva" />
 
-      <label>E-mail institucional</label>
-      <input id="clienteEmail" type="email" autocomplete="email" placeholder="exemplo@aluno.educacao.sp.gov.br" />
+      <label>E-mail da conta Google</label>
+      <input id="clienteEmail" type="email" autocomplete="email" readonly placeholder="Entre com Google" />
 
       <div id="itensCarrinho"></div>
 
