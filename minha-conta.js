@@ -1,12 +1,28 @@
 let usuarioConta = null;
+let atualizadorPedidos = null;
 
 document.addEventListener("DOMContentLoaded", async function () {
   document.getElementById("botaoGoogle")?.addEventListener("click", entrarComGoogle);
   document.getElementById("botaoSair")?.addEventListener("click", sairDaConta);
   document.getElementById("botaoAtualizarPedidos")?.addEventListener("click", carregarMeusPedidos);
 
-  const { data } = await db.auth.getUser();
+  const { data, error } = await db.auth.getUser();
+  if (error) {
+    console.error("Erro ao recuperar sessão do cliente:", error);
+    return;
+  }
   if (data?.user) mostrarConta(data.user);
+
+  db.auth.onAuthStateChange(function (_event, session) {
+    if (session?.user) {
+      mostrarConta(session.user);
+    } else if (usuarioConta) {
+      usuarioConta = null;
+      pararAtualizacaoPedidos();
+      document.getElementById("areaPedidos").hidden = true;
+      document.getElementById("areaAutenticacao").hidden = false;
+    }
+  });
 });
 
 async function entrarComGoogle() {
@@ -38,6 +54,8 @@ function mostrarConta(usuario) {
   document.getElementById("emailUsuario").textContent = usuario.email || "";
   document.getElementById("avatarUsuario").textContent = nome.charAt(0).toUpperCase();
   carregarMeusPedidos();
+  pararAtualizacaoPedidos();
+  atualizadorPedidos = window.setInterval(carregarMeusPedidos, 15000);
 }
 
 async function carregarMeusPedidos() {
@@ -47,7 +65,8 @@ async function carregarMeusPedidos() {
 
   const { data, error } = await db
     .from("pedidos")
-    .select("id, numero_pedido, total, status, status_pagamento, canal_venda, created_at, itens_pedido(produto_nome, quantidade)")
+    .select("id, numero_pedido, cliente_nome, total, status, status_pagamento, canal_venda, created_at, pago_em, horario_pagamento_confirmado, itens_pedido(produto_nome, quantidade, subtotal)")
+    .eq("cliente_email", usuarioConta.email.trim().toLowerCase())
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -75,6 +94,7 @@ function renderizarPedidoCliente(pedido) {
   const itens = (pedido.itens_pedido || [])
     .map((item) => `${Number(item.quantidade || 0)}x ${escaparHtml(item.produto_nome || "Produto")}`)
     .join(" · ");
+  const etapas = etapasDoPedido(pedido);
 
   return `
     <article class="pedido-cliente">
@@ -83,6 +103,13 @@ function renderizarPedidoCliente(pedido) {
         <strong>${formatarMoedaCliente(pedido.total)}</strong>
       </div>
       <p class="pedido-cliente-itens">${itens || "Itens do pedido"}</p>
+      <div class="pedido-progresso" aria-label="Status do pedido">
+        ${etapas.map((etapa) => `
+          <div class="etapa-pedido ${etapa.estado}">
+            <span class="etapa-ponto"></span>
+            <small>${etapa.texto}</small>
+          </div>`).join("")}
+      </div>
       <div class="pedido-cliente-rodape">
         <span class="status-cliente status-${status.chave}"><i></i>${status.texto}</span>
         <span class="pedido-canal">${pedido.canal_venda === "totem" ? "Totem" : "Aplicativo"}</span>
@@ -91,19 +118,47 @@ function renderizarPedidoCliente(pedido) {
 }
 
 function statusDoPedido(pedido) {
-  if (pedido.status_pagamento === "approved" || pedido.status === "pago") return { chave: "pago", texto: "Pagamento efetuado" };
   if (pedido.status === "em_preparo") return { chave: "preparo", texto: "Em preparo" };
   if (pedido.status === "pronto") return { chave: "pronto", texto: "Pronto para retirar" };
   if (pedido.status === "entregue") return { chave: "entregue", texto: "Pedido entregue" };
   if (pedido.status === "expirado") return { chave: "expirado", texto: "Pagamento expirado" };
+  if (pedido.status_pagamento === "approved" || pedido.status === "pago") return { chave: "pago", texto: "Pagamento efetuado" };
   return { chave: "aguardando", texto: "Aguardando pagamento" };
+}
+
+function etapasDoPedido(pedido) {
+  if (pedido.status === "expirado") {
+    return [
+      { texto: "Pedido criado", estado: "concluida" },
+      { texto: "Pagamento expirado", estado: "cancelada" },
+      { texto: "Retirada", estado: "futura" }
+    ];
+  }
+
+  const pagamentoConfirmado = pedido.status_pagamento === "approved" || pedido.status === "pago" || ["em_preparo", "pronto", "entregue"].includes(pedido.status);
+  const preparoIniciado = ["em_preparo", "pronto", "entregue"].includes(pedido.status);
+  const pronto = ["pronto", "entregue"].includes(pedido.status);
+  const entregue = pedido.status === "entregue";
+  return [
+    { texto: pagamentoConfirmado ? "Pagamento confirmado" : "Aguardando pagamento", estado: pagamentoConfirmado ? "concluida" : "atual" },
+    { texto: "Em preparo", estado: preparoIniciado ? (pronto ? "concluida" : "atual") : "futura" },
+    { texto: entregue ? "Pedido retirado" : "Pronto para retirar", estado: entregue ? "concluida" : (pronto ? "atual" : "futura") }
+  ];
 }
 
 async function sairDaConta() {
   await db.auth.signOut();
+  pararAtualizacaoPedidos();
   usuarioConta = null;
   document.getElementById("areaPedidos").hidden = true;
   document.getElementById("areaAutenticacao").hidden = false;
+}
+
+function pararAtualizacaoPedidos() {
+  if (atualizadorPedidos) {
+    window.clearInterval(atualizadorPedidos);
+    atualizadorPedidos = null;
+  }
 }
 
 function formatarMoedaCliente(valor) {
