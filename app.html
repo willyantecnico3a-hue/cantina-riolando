@@ -12,11 +12,11 @@
 </head>
 <body class="modo-app">
   <header class="topo topo-app">
-    <div>
-      <h1>App Cantina Riolando</h1>
-      <p>Pedido pelo celular</p>
+    <div class="app-identidade">
+      <p class="app-local">⌖ Cantina Riolando</p>
+      <h1>Olá! O que você quer pedir?</h1>
     </div>
-    <a class="app-link-pedidos" href="minha-conta.html">Meus pedidos</a>
+    <a class="app-link-pedidos" href="minha-conta.html" aria-label="Meus pedidos">◷<span>Pedidos</span></a>
   </header>
 
   <main class="app-shell">
@@ -28,8 +28,16 @@
       <button id="installPwaButton" class="btn" type="button" hidden>Instalar</button>
     </section>
 
+    <section class="app-destaque">
+      <div>
+        <span>PEÇA SEM FILA</span>
+        <strong>Seu lanche favorito,<br>pronto para retirar.</strong>
+        <p>Faça o pedido e pague pelo Pix.</p>
+      </div>
+      <div class="app-destaque-icone" aria-hidden="true">🍔</div>
+    </section>
+
     <section class="app-card-produtos">
-      <h2>Cardapio</h2>
       <div id="produtos" class="grid-produtos"></div>
     </section>
 

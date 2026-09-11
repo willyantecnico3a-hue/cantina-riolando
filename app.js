@@ -269,6 +269,9 @@ function renderizarProdutos() {
   produtosPagina.forEach(function (produto) {
     const estoque = Number(produto.estoque || 0);
     const semEstoque = estoque <= 0;
+    const botaoAdicionar = detectarCanalVenda() === "app"
+      ? `<button class="btn-produto" aria-label="Adicionar ${htmlSeguro(produto.nome || "produto")} ao pedido" onclick="adicionarCarrinho('${produto.id}')">+</button>`
+      : `<button class="btn-produto" onclick="adicionarCarrinho('${produto.id}')">Adicionar</button>`;
 
     const div = document.createElement("div");
     div.className = semEstoque ? "produto-card produto-esgotado" : "produto-card";
@@ -292,7 +295,7 @@ function renderizarProdutos() {
 
           ${semEstoque
             ? `<button class="btn-produto esgotado" disabled>Indisponível</button>`
-            : `<button class="btn-produto" onclick="adicionarCarrinho('${produto.id}')">Adicionar</button>`}
+            : botaoAdicionar}
         </div>
       </div>
     `;
