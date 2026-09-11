@@ -9,7 +9,6 @@ let categoriaAtual = "Todos";
 let buscaProdutos = "";
 let paginaProdutos = 1;
 let monitorPagamentoTotem = null;
-let clienteAutenticado = null;
 
 const CATEGORIAS_PADRAO = ["Todos", "Bebidas", "Lanches", "Bolos", "Doces", "Salgados", "Combos", "Outros"];
 // No totem, mostrar um catálogo maior evita áreas vazias em telas amplas.
@@ -17,31 +16,17 @@ const PRODUTOS_POR_PAGINA = window.location.pathname.toLowerCase().includes("tot
 
 document.addEventListener("DOMContentLoaded", async function () {
   prepararPwa();
-  if (document.body.classList.contains("modo-app")) {
-    await prepararAutenticacaoCliente();
-  }
+  await preencherClienteAutenticado();
   await iniciarTotem();
 });
 
-async function prepararAutenticacaoCliente() {
+async function preencherClienteAutenticado() {
   const banco = obterBanco();
   if (!banco) return;
 
   const { data } = await banco.auth.getUser();
   const usuario = data?.user;
-  if (!usuario) {
-    atualizarAcessoCliente();
-    return;
-  }
-
-  const { data: adminData, error: adminError } = await banco.rpc("is_admin");
-  if (!adminError && adminData === true) {
-    atualizarAcessoCliente("A conta administrativa não pode ser usada para fazer pedidos.");
-    return;
-  }
-
-  clienteAutenticado = usuario;
-  atualizarAcessoCliente();
+  if (!usuario) return;
 
   const campoEmail = document.getElementById("clienteEmail");
   const campoNome = document.getElementById("clienteNome");
@@ -49,45 +34,6 @@ async function prepararAutenticacaoCliente() {
 
   if (campoEmail && usuario.email) campoEmail.value = usuario.email;
   if (campoNome && nome) campoNome.value = nome;
-}
-
-async function entrarClienteComGoogle() {
-  const banco = obterBanco();
-  if (!banco) return;
-
-  const botao = document.getElementById("botaoGoogleCliente");
-  if (botao) {
-    botao.disabled = true;
-    botao.textContent = "Abrindo Google...";
-  }
-
-  await banco.auth.signOut();
-  const { error } = await banco.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${window.location.origin}${window.location.pathname}` }
-  });
-
-  if (error) {
-    atualizarAcessoCliente("Não foi possível iniciar o acesso com Google. Tente novamente.");
-  }
-}
-
-function atualizarAcessoCliente(mensagem) {
-  const area = document.getElementById("acessoCliente");
-  const botao = document.getElementById("botaoGoogleCliente");
-  const aviso = document.getElementById("mensagemAcessoCliente");
-  const autenticado = Boolean(clienteAutenticado?.email);
-
-  if (area) area.classList.toggle("cliente-conectado", autenticado);
-  if (botao) {
-    botao.hidden = autenticado;
-    botao.disabled = false;
-    botao.innerHTML = "<span>G</span> Entrar com Google";
-  }
-  if (aviso) {
-    aviso.hidden = autenticado && !mensagem;
-    aviso.textContent = mensagem || "Entre com sua conta Google para fazer o pedido.";
-  }
 }
 
 async function iniciarTotem() {
@@ -579,21 +525,8 @@ async function finalizarPedido() {
     return;
   }
 
-  if (document.body.classList.contains("modo-app") && !clienteAutenticado?.email) {
-    atualizarAcessoCliente("Entre com sua conta Google antes de fazer o pedido.");
-    resultado.innerHTML = `<div class="resultado-pedido erro"><h3>Login necessário</h3><p>Entre com sua conta Google para continuar.</p></div>`;
-    document.getElementById("acessoCliente")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    return;
-  }
-
   if (!clienteNome || !clienteEmail) {
     alert("Informe nome e e-mail institucional.");
-    return;
-  }
-
-  if (document.body.classList.contains("modo-app") && clienteEmail.toLowerCase() !== clienteAutenticado.email.toLowerCase()) {
-    alert("Use o e-mail da conta Google conectada.");
-    document.getElementById("clienteEmail").value = clienteAutenticado.email;
     return;
   }
 
